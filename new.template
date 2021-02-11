@@ -1,7 +1,7 @@
 AWSTemplateFormatVersion: 2010-09-09
 Resources:
   VPC:
-    Type: 'AWS::EC2::VPC'
+    Type: AWS::EC2::VPC
     Properties:
       CidrBlock: 10.0.0.0/16
       EnableDnsHostnames: true
@@ -11,28 +11,31 @@ Resources:
         - Key: Name
           Value: TestVPC
   InternetGateway:
-    Type: 'AWS::EC2::InternetGateway'
+    Type: AWS::EC2::InternetGateway
     Properties:
       Tags:
         - Key: Name
           Value: TestInternetGateway
   RouteTable:
-    Type: 'AWS::EC2::RouteTable'
+    Type: AWS::EC2::RouteTable
     Properties:
       VpcId: !Ref VPC
+      Tags:
+        - Key: Name
+          Value: TestRouteTable
   GatewayAttachment:
-    Type: 'AWS::EC2::VPCGatewayAttachment'
+    Type: AWS::EC2::VPCGatewayAttachment
     Properties:
       VpcId: !Ref VPC
       InternetGatewayId: !Ref InternetGateway
-  EC2R4AHGC:
-    Type: 'AWS::EC2::Route'
+  Route:
+    Type: AWS::EC2::Route
     Properties:
       DestinationCidrBlock: 0.0.0.0/0
       RouteTableId: !Ref RouteTable
       GatewayId: !Ref InternetGateway
   Subnet:
-    Type: 'AWS::EC2::Subnet'
+    Type: AWS::EC2::Subnet
     Properties:
       VpcId: !Ref VPC
       AvailabilityZone: ap-northeast-1a
@@ -41,13 +44,8 @@ Resources:
       Tags:
         - Key: Name
           Value: TestPublicSubnet-East1a
-  GatewayRouteTableAssociation:
-    Type: 'AWS::EC2::GatewayRouteTableAssociation'
-    Properties:
-      GatewayId: !Ref InternetGateway
-      RouteTableId: !Ref RouteTable
   SubnetRouteTableAssociation:
-    Type: 'AWS::EC2::SubnetRouteTableAssociation'
+    Type: AWS::EC2::SubnetRouteTableAssociation
     Properties:
       SubnetId: !Ref Subnet
       RouteTableId: !Ref RouteTable
