@@ -1,4 +1,14 @@
 AWSTemplateFormatVersion: 2010-09-09
+Parameters:
+  KeyName:
+    Description: The EC2 Key Pair to allow SSH access to the instance
+    Type: AWS::EC2::KeyPair::KeyName
+  EC2ImageId:
+    Type: AWS::SSM::Parameter::Value<String>
+    Default: /aws/service/ami-amazon-linux-latest/amzn2-ami-hvm-x86_64-gp2
+  MyIP:
+    Description: IP address allowed to access EC2
+    Type: String
 Resources:
   VPC:
     Type: AWS::EC2::VPC
@@ -49,3 +59,45 @@ Resources:
     Properties:
       SubnetId: !Ref Subnet
       RouteTableId: !Ref RouteTable
+  EC2:
+    Type: AWS::EC2::Instance
+    Properties:
+      AvailabilityZone: ap-northeast-1a
+      ImageId: !Ref EC2ImageId
+      KeyName: !Ref KeyName
+      InstanceType: t2.micro
+      NetworkInterfaces:
+        - AssociatePublicIpAddress: true
+          DeviceIndex: 0
+          SubnetId: !Ref Subnet
+          GroupSet:
+            - !Ref SecurityGroup
+      UserData: !Base64 |
+        #!/bin/bash
+        sudo yum update -y
+        sudo amazon-linux-extras install nginx1 -y
+        sudo systemctl start nginx
+        sudo systemctl enable nginx
+      Tags:
+        - Key: Name
+          Value: test-cf-ec2-1a
+  SecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: EC2 Security Group
+      GroupName: ec2-security-group
+      SecurityGroupIngress:
+        - CidrIp: !Ref MyIP
+          FromPort: 80
+          ToPort: 80
+          IpProtocol: tcp
+        - CidrIp: !Ref MyIP
+          FromPort: 22
+          ToPort: 22
+          IpProtocol: tcp
+      SecurityGroupEgress:
+        CidrIp: 0.0.0.0/0
+        FromPort: 80
+        ToPort: 80
+        IpProtocol: tcp
+      VpcId: !Ref VPC
