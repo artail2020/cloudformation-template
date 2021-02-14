@@ -10,6 +10,7 @@ Parameters:
     Description: IP address allowed to access EC2
     Type: String
 Resources:
+  # VPC
   VPC:
     Type: AWS::EC2::VPC
     Properties:
@@ -20,12 +21,14 @@ Resources:
       Tags:
         - Key: Name
           Value: TestVPC
+  # InternetGateway
   InternetGateway:
     Type: AWS::EC2::InternetGateway
     Properties:
       Tags:
         - Key: Name
           Value: TestInternetGateway
+  # RouteTable
   RouteTable:
     Type: AWS::EC2::RouteTable
     Properties:
@@ -33,17 +36,20 @@ Resources:
       Tags:
         - Key: Name
           Value: TestRouteTable
+  # GatewayAttachment
   GatewayAttachment:
     Type: AWS::EC2::VPCGatewayAttachment
     Properties:
       VpcId: !Ref VPC
       InternetGatewayId: !Ref InternetGateway
+  # Route
   Route:
     Type: AWS::EC2::Route
     Properties:
       DestinationCidrBlock: 0.0.0.0/0
       RouteTableId: !Ref RouteTable
       GatewayId: !Ref InternetGateway
+  # Subnet
   SubnetA:
     Type: AWS::EC2::Subnet
     Properties:
@@ -64,6 +70,7 @@ Resources:
       Tags:
         - Key: Name
           Value: TestPublicSubnet-East1c
+  # SubnetRouteTableAssociation
   SubnetRouteTableAssociation1a:
     Type: AWS::EC2::SubnetRouteTableAssociation
     Properties:
@@ -74,6 +81,7 @@ Resources:
     Properties:
       SubnetId: !Ref SubnetC
       RouteTableId: !Ref RouteTable
+  # EC2
   EC2A:
     Type: AWS::EC2::Instance
     Properties:
@@ -86,7 +94,7 @@ Resources:
           DeviceIndex: 0
           SubnetId: !Ref SubnetA
           GroupSet:
-            - !Ref SecurityGroup
+            - !Ref SecurityGroupEC2
       UserData: !Base64 |
         #!/bin/bash
         sudo yum update -y
@@ -108,7 +116,7 @@ Resources:
           DeviceIndex: 0
           SubnetId: !Ref SubnetC
           GroupSet:
-            - !Ref SecurityGroup
+            - !Ref SecurityGroupEC2
       UserData: !Base64 |
         #!/bin/bash
         sudo yum update -y
@@ -118,13 +126,14 @@ Resources:
       Tags:
         - Key: Name
           Value: test-cf-ec2-1c
-  SecurityGroup:
+  # SecurityGroup
+  SecurityGroupEC2:
     Type: AWS::EC2::SecurityGroup
     Properties:
       GroupDescription: EC2 Security Group
       GroupName: ec2-security-group
       SecurityGroupIngress:
-        - CidrIp: !Ref MyIP
+        - SourceSecurityGroupId: !Ref SecurityGroupELB
           FromPort: 80
           ToPort: 80
           IpProtocol: tcp
@@ -138,3 +147,88 @@ Resources:
         ToPort: 80
         IpProtocol: tcp
       VpcId: !Ref VPC
+  SecurityGroupELB:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: ELB Security Group
+      GroupName: elb-security-group
+      SecurityGroupIngress:
+        - CidrIp: 0.0.0.0/0
+          FromPort: 80
+          ToPort: 80
+          IpProtocol: tcp
+      SecurityGroupEgress:
+        CidrIp: 0.0.0.0/0
+        FromPort: 80
+        ToPort: 80
+        IpProtocol: tcp
+      VpcId: !Ref VPC
+  # LoadBalancer
+  ElasticLoadBalancer:
+    Type: AWS::ElasticLoadBalancingV2::LoadBalancer
+    Properties:
+      IpAddressType: ipv4
+      LoadBalancerAttributes:                # optional, list of LoadBalancerAttribute
+        - Key: access_logs.s3.enabled
+          Value: false
+        - Key: deletion_protection.enabled
+          Value: false
+        - Key: idle_timeout.timeout_seconds
+          Value: 60
+        - Key: routing.http.desync_mitigation_mode
+          Value: defensive
+        - Key: routing.http.drop_invalid_header_fields.enabled
+          Value: false
+        - Key: routing.http2.enabled
+          Value: true
+      Name: elb-cf-sample
+      Scheme: internet-facing
+      SecurityGroups:
+        - !Ref SecurityGroupELB
+      Subnets:
+        - !Ref SubnetA
+        - !Ref SubnetC
+      Tags:                # optional, list of Tag
+        - Key: Name
+          Value: elb-cf-sample
+      Type: application
+  TargetGroup:
+    Type: AWS::ElasticLoadBalancingV2::TargetGroup
+    Properties:
+      HealthCheckIntervalSeconds: 30
+      HealthCheckPath: /
+      HealthCheckPort: traffic-port
+      HealthCheckProtocol: HTTP
+      HealthCheckTimeoutSeconds: 5
+      HealthyThresholdCount: 5
+      Matcher:
+        HttpCode: 200
+      Name: tgt-cf-sample
+      Port: 80
+      Protocol: HTTP
+      TargetGroupAttributes:
+        - Key: deregistration_delay.timeout_seconds
+          Value: 300
+        - Key: stickiness.enabled
+          Value: false
+        - Key: load_balancing.algorithm.type
+          Value: round_robin
+        - Key: slow_start.duration_seconds
+          Value: 0
+      Targets:
+        - Id: !Ref EC2A
+          Port: 80
+        - Id: !Ref EC2C
+          Port: 80
+      TargetType: instance
+      UnhealthyThresholdCount: 2
+      VpcId: !Ref VPC
+  Listener:
+    Type: AWS::ElasticLoadBalancingV2::Listener
+    Properties:
+      DefaultActions:
+        - TargetGroupArn: !Ref TargetGroup
+          Type: forward
+      LoadBalancerArn: !Ref ElasticLoadBalancer
+      Port: 80
+      Protocol: HTTP
