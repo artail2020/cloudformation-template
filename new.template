@@ -98,26 +98,26 @@ Resources:
           Value: test-cf-ec2-1a
   EC2-1c:
     Type: AWS::EC2::Instance
-      Properties:
-        AvailabilityZone: ap-northeast-1c
-        ImageId: !Ref EC2ImageId
-        KeyName: !Ref KeyName
-        InstanceType: t2.micro
-        NetworkInterfaces:
-          - AssociatePublicIpAddress: true
-            DeviceIndex: 0
-            SubnetId: !Ref Subnet-1c
-            GroupSet:
-              - !Ref SecurityGroup
-        UserData: !Base64 |
-          #!/bin/bash
-          sudo yum update -y
-          sudo amazon-linux-extras install nginx1 -y
-          sudo systemctl start nginx
-          sudo systemctl enable nginx
-        Tags:
-          - Key: Name
-            Value: test-cf-ec2-1c
+    Properties:
+      AvailabilityZone: ap-northeast-1c
+      ImageId: !Ref EC2ImageId
+      KeyName: !Ref KeyName
+      InstanceType: t2.micro
+      NetworkInterfaces:
+        - AssociatePublicIpAddress: true
+          DeviceIndex: 0
+          SubnetId: !Ref Subnet-1c
+          GroupSet:
+            - !Ref SecurityGroup
+      UserData: !Base64 |
+        #!/bin/bash
+        sudo yum update -y
+        sudo amazon-linux-extras install nginx1 -y
+        sudo systemctl start nginx
+        sudo systemctl enable nginx
+      Tags:
+        - Key: Name
+          Value: test-cf-ec2-1c
   SecurityGroup:
     Type: AWS::EC2::SecurityGroup
     Properties:
