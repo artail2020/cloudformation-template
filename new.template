@@ -44,7 +44,7 @@ Resources:
       DestinationCidrBlock: 0.0.0.0/0
       RouteTableId: !Ref RouteTable
       GatewayId: !Ref InternetGateway
-  Subnet:
+  Subnet-1a:
     Type: AWS::EC2::Subnet
     Properties:
       VpcId: !Ref VPC
@@ -54,12 +54,27 @@ Resources:
       Tags:
         - Key: Name
           Value: TestPublicSubnet-East1a
-  SubnetRouteTableAssociation:
+  Subnet-1c:
+    Type: AWS::EC2::Subnet
+    Properties:
+      VpcId: !Ref VPC
+      AvailabilityZone: ap-northeast-1c
+      CidrBlock: 10.0.1.0/24
+      MapPublicIpOnLaunch: true
+      Tags:
+        - Key: Name
+          Value: TestPublicSubnet-East1c
+  SubnetRouteTableAssociation-1a:
     Type: AWS::EC2::SubnetRouteTableAssociation
     Properties:
-      SubnetId: !Ref Subnet
+      SubnetId: !Ref Subnet-1a
       RouteTableId: !Ref RouteTable
-  EC2:
+  SubnetRouteTableAssociation-1c:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      SubnetId: !Ref Subnet-1c
+      RouteTableId: !Ref RouteTable
+  EC2-1a:
     Type: AWS::EC2::Instance
     Properties:
       AvailabilityZone: ap-northeast-1a
@@ -69,7 +84,7 @@ Resources:
       NetworkInterfaces:
         - AssociatePublicIpAddress: true
           DeviceIndex: 0
-          SubnetId: !Ref Subnet
+          SubnetId: !Ref Subnet-1a
           GroupSet:
             - !Ref SecurityGroup
       UserData: !Base64 |
@@ -81,6 +96,28 @@ Resources:
       Tags:
         - Key: Name
           Value: test-cf-ec2-1a
+  EC2-1c:
+    Type: AWS::EC2::Instance
+      Properties:
+        AvailabilityZone: ap-northeast-1c
+        ImageId: !Ref EC2ImageId
+        KeyName: !Ref KeyName
+        InstanceType: t2.micro
+        NetworkInterfaces:
+          - AssociatePublicIpAddress: true
+            DeviceIndex: 0
+            SubnetId: !Ref Subnet-1c
+            GroupSet:
+              - !Ref SecurityGroup
+        UserData: !Base64 |
+          #!/bin/bash
+          sudo yum update -y
+          sudo amazon-linux-extras install nginx1 -y
+          sudo systemctl start nginx
+          sudo systemctl enable nginx
+        Tags:
+          - Key: Name
+            Value: test-cf-ec2-1c
   SecurityGroup:
     Type: AWS::EC2::SecurityGroup
     Properties:
