@@ -59,7 +59,7 @@ Resources:
     Properties:
       VpcId: !Ref VPC
       AvailabilityZone: ap-northeast-1c
-      CidrBlock: 10.0.1.0/24
+      CidrBlock: 10.0.2.0/24
       MapPublicIpOnLaunch: true
       Tags:
         - Key: Name
