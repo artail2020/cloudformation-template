@@ -44,7 +44,7 @@ Resources:
       DestinationCidrBlock: 0.0.0.0/0
       RouteTableId: !Ref RouteTable
       GatewayId: !Ref InternetGateway
-  Subnet-1a:
+  SubnetA:
     Type: AWS::EC2::Subnet
     Properties:
       VpcId: !Ref VPC
@@ -54,7 +54,7 @@ Resources:
       Tags:
         - Key: Name
           Value: TestPublicSubnet-East1a
-  Subnet-1c:
+  SubnetC:
     Type: AWS::EC2::Subnet
     Properties:
       VpcId: !Ref VPC
@@ -64,17 +64,17 @@ Resources:
       Tags:
         - Key: Name
           Value: TestPublicSubnet-East1c
-  SubnetRouteTableAssociation-1a:
+  SubnetRouteTableAssociation1a:
     Type: AWS::EC2::SubnetRouteTableAssociation
     Properties:
-      SubnetId: !Ref Subnet-1a
+      SubnetId: !Ref SubnetA
       RouteTableId: !Ref RouteTable
-  SubnetRouteTableAssociation-1c:
+  SubnetRouteTableAssociation1c:
     Type: AWS::EC2::SubnetRouteTableAssociation
     Properties:
-      SubnetId: !Ref Subnet-1c
+      SubnetId: !Ref SubnetC
       RouteTableId: !Ref RouteTable
-  EC2-1a:
+  EC2A:
     Type: AWS::EC2::Instance
     Properties:
       AvailabilityZone: ap-northeast-1a
@@ -84,7 +84,7 @@ Resources:
       NetworkInterfaces:
         - AssociatePublicIpAddress: true
           DeviceIndex: 0
-          SubnetId: !Ref Subnet-1a
+          SubnetId: !Ref SubnetA
           GroupSet:
             - !Ref SecurityGroup
       UserData: !Base64 |
@@ -96,7 +96,7 @@ Resources:
       Tags:
         - Key: Name
           Value: test-cf-ec2-1a
-  EC2-1c:
+  EC2C:
     Type: AWS::EC2::Instance
     Properties:
       AvailabilityZone: ap-northeast-1c
@@ -106,7 +106,7 @@ Resources:
       NetworkInterfaces:
         - AssociatePublicIpAddress: true
           DeviceIndex: 0
-          SubnetId: !Ref Subnet-1c
+          SubnetId: !Ref SubnetC
           GroupSet:
             - !Ref SecurityGroup
       UserData: !Base64 |
