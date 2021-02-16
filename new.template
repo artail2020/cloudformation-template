@@ -106,7 +106,6 @@ Resources:
   PrivateSubnetA:
     Type: AWS::EC2::Subnet
     Properties:
-      AssignIpv6AddressOnCreation: false
       AvailabilityZone: ap-northeast-1a
       CidrBlock: 10.0.10.0/24
       MapPublicIpOnLaunch: false
@@ -117,7 +116,6 @@ Resources:
   PrivateSubnetC:
     Type: AWS::EC2::Subnet
     Properties:
-      AssignIpv6AddressOnCreation: false
       AvailabilityZone: ap-northeast-1c
       CidrBlock: 10.0.20.0/24
       MapPublicIpOnLaunch: false
