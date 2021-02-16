@@ -9,6 +9,12 @@ Parameters:
   MyIP:
     Description: IP address allowed to access EC2
     Type: String
+  DBUser:
+    Description: RDS master user name
+    Type: String
+  DBPassword:
+    Description: RDS master user password
+    Type: String
 Resources:
   # VPC
   VPC:
@@ -29,13 +35,34 @@ Resources:
         - Key: Name
           Value: TestInternetGateway
   # RouteTable
-  RouteTable:
+  PublicRouteTableA:
     Type: AWS::EC2::RouteTable
     Properties:
       VpcId: !Ref VPC
       Tags:
         - Key: Name
-          Value: TestRouteTable
+          Value: TestRouteTableA
+  PublicRouteTableC:
+    Type: AWS::EC2::RouteTable
+    Properties:
+      VpcId: !Ref VPC
+      Tags:
+        - Key: Name
+          Value: TestRouteTableC
+  PrivateRouteTableA:
+    Type: AWS::EC2::RouteTable
+    Properties:
+      Tags:
+        - Key: Name
+          Value: TestRouteTableA-Private
+      VpcId: !Ref VPC
+  PrivateRouteTableC:
+    Type: AWS::EC2::RouteTable
+    Properties:
+      Tags:
+        - Key: Name
+          Value: TestRouteTableC-Private
+      VpcId: !Ref VPC
   # GatewayAttachment
   GatewayAttachment:
     Type: AWS::EC2::VPCGatewayAttachment
@@ -43,14 +70,20 @@ Resources:
       VpcId: !Ref VPC
       InternetGatewayId: !Ref InternetGateway
   # Route
-  Route:
+  RouteA:
     Type: AWS::EC2::Route
     Properties:
       DestinationCidrBlock: 0.0.0.0/0
-      RouteTableId: !Ref RouteTable
+      RouteTableId: !Ref PublicRouteTableA
+      GatewayId: !Ref InternetGateway
+  RouteC:
+    Type: AWS::EC2::Route
+    Properties:
+      DestinationCidrBlock: 0.0.0.0/0
+      RouteTableId: !Ref PublicRouteTableC
       GatewayId: !Ref InternetGateway
   # Subnet
-  SubnetA:
+  PublicSubnetA:
     Type: AWS::EC2::Subnet
     Properties:
       VpcId: !Ref VPC
@@ -60,7 +93,7 @@ Resources:
       Tags:
         - Key: Name
           Value: TestPublicSubnet-East1a
-  SubnetC:
+  PublicSubnetC:
     Type: AWS::EC2::Subnet
     Properties:
       VpcId: !Ref VPC
@@ -70,17 +103,49 @@ Resources:
       Tags:
         - Key: Name
           Value: TestPublicSubnet-East1c
+  PrivateSubnetA:
+    Type: AWS::EC2::Subnet
+    Properties:
+      AssignIpv6AddressOnCreation: false
+      AvailabilityZone: ap-northeast-1a
+      CidrBlock: 10.0.10.0/24
+      MapPublicIpOnLaunch: false
+      Tags:
+        - Key: Name
+          Value: TestPrivateSubnet-East1a
+      VpcId: !Ref VPC
+  PrivateSubnetC:
+    Type: AWS::EC2::Subnet
+    Properties:
+      AssignIpv6AddressOnCreation: false
+      AvailabilityZone: ap-northeast-1c
+      CidrBlock: 10.0.20.0/24
+      MapPublicIpOnLaunch: false
+      Tags:
+        - Key: Name
+          Value: TestPrivateSubnet-East1c
+      VpcId: !Ref VPC
   # SubnetRouteTableAssociation
   SubnetRouteTableAssociation1a:
     Type: AWS::EC2::SubnetRouteTableAssociation
     Properties:
-      SubnetId: !Ref SubnetA
-      RouteTableId: !Ref RouteTable
+      SubnetId: !Ref PublicSubnetA
+      RouteTableId: !Ref PublicRouteTableA
   SubnetRouteTableAssociation1c:
     Type: AWS::EC2::SubnetRouteTableAssociation
     Properties:
-      SubnetId: !Ref SubnetC
-      RouteTableId: !Ref RouteTable
+      SubnetId: !Ref PublicSubnetC
+      RouteTableId: !Ref PublicRouteTableC
+  SubnetRouteTableAssociation1aPrivate:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      RouteTableId: !Ref PrivateRouteTableA
+      SubnetId: !Ref PrivateSubnetA
+  SubnetRouteTableAssociation1cPrivate:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      RouteTableId: !Ref PrivateRouteTableC
+      SubnetId: !Ref PrivateSubnetC
   # EC2
   EC2A:
     Type: AWS::EC2::Instance
@@ -92,12 +157,14 @@ Resources:
       NetworkInterfaces:
         - AssociatePublicIpAddress: true
           DeviceIndex: 0
-          SubnetId: !Ref SubnetA
+          SubnetId: !Ref PublicSubnetA
           GroupSet:
             - !Ref SecurityGroupEC2
       UserData: !Base64 |
         #!/bin/bash
         sudo yum update -y
+        sudo yum remove mariadb-libs -y
+        sudo yum install mysql mysql-devel -y
         sudo amazon-linux-extras install nginx1 -y
         sudo systemctl start nginx
         sudo systemctl enable nginx
@@ -114,12 +181,14 @@ Resources:
       NetworkInterfaces:
         - AssociatePublicIpAddress: true
           DeviceIndex: 0
-          SubnetId: !Ref SubnetC
+          SubnetId: !Ref PublicSubnetC
           GroupSet:
             - !Ref SecurityGroupEC2
       UserData: !Base64 |
         #!/bin/bash
         sudo yum update -y
+        sudo yum remove mariadb-libs -y
+        sudo yum install mysql mysql-devel -y
         sudo amazon-linux-extras install nginx1 -y
         sudo systemctl start nginx
         sudo systemctl enable nginx
@@ -163,12 +232,28 @@ Resources:
         ToPort: 80
         IpProtocol: tcp
       VpcId: !Ref VPC
+  SecurityGroupRDS:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: RDS Security Group
+      GroupName: rds-security-group
+      SecurityGroupIngress:
+        - SourceSecurityGroupId: !Ref SecurityGroupEC2
+          FromPort: 3306
+          ToPort: 3306
+          IpProtocol: tcp
+      SecurityGroupEgress:
+        DestinationSecurityGroupId: !Ref SecurityGroupEC2
+        FromPort: 3306
+        ToPort: 3306
+        IpProtocol: tcp
+      VpcId: !Ref VPC
   # LoadBalancer
   ElasticLoadBalancer:
     Type: AWS::ElasticLoadBalancingV2::LoadBalancer
     Properties:
       IpAddressType: ipv4
-      LoadBalancerAttributes:                # optional, list of LoadBalancerAttribute
+      LoadBalancerAttributes:
         - Key: access_logs.s3.enabled
           Value: false
         - Key: deletion_protection.enabled
@@ -186,8 +271,8 @@ Resources:
       SecurityGroups:
         - !Ref SecurityGroupELB
       Subnets:
-        - !Ref SubnetA
-        - !Ref SubnetC
+        - !Ref PublicSubnetA
+        - !Ref PublicSubnetC
       Tags:                # optional, list of Tag
         - Key: Name
           Value: elb-cf-sample
@@ -232,3 +317,64 @@ Resources:
       LoadBalancerArn: !Ref ElasticLoadBalancer
       Port: 80
       Protocol: HTTP
+  # RDS
+  RdsMysql:
+    Type: AWS::RDS::DBInstance
+    Properties:
+      AllocatedStorage: 20
+      AllowMajorVersionUpgrade: true
+      AutoMinorVersionUpgrade: true
+      AvailabilityZone: ap-northeast-1a
+      BackupRetentionPeriod: 7
+      CopyTagsToSnapshot: true
+      DBInstanceClass: db.t2.micro
+      DBInstanceIdentifier: database-cf-1
+      DBParameterGroupName: !Ref DBParameterGroup
+      DBSubnetGroupName: !Ref DBSubnetGroup
+      DeletionProtection: false
+      EnablePerformanceInsights: false
+      Engine: mysql
+      EngineVersion: 8.0.20
+      LicenseModel: general-public-license
+      MasterUserPassword: !Ref DBPassword
+      MasterUsername: !Ref DBUser
+      MaxAllocatedStorage: 1000
+      MonitoringInterval: 0
+      MultiAZ: false
+      Port: 3306
+      PreferredBackupWindow: 18:00-18:30
+      PreferredMaintenanceWindow: mon:03:00-mon:03:30
+      PubliclyAccessible: false
+      StorageEncrypted: false
+      StorageType: gp2
+      Tags:
+        - Key: Name
+          Value: mysql-database-cf-1
+      VPCSecurityGroups:
+        - !Ref SecurityGroupRDS
+  # DBParameterGroup
+  DBParameterGroup:
+    Type: AWS::RDS::DBParameterGroup
+    Properties:
+      Description: sample parameter cloudformation
+      Family: mysql8.0
+      Parameters:
+        character_set_client: utf8
+        character_set_connection: utf8
+        character_set_database: utf8
+        character_set_results: utf8
+        character_set_server: utf8
+      Tags:
+        - Key: Name
+          Value: paramgroup-cf-mysql
+  # DBSubnetGroup
+  DBSubnetGroup:
+    Type: AWS::RDS::DBSubnetGroup
+    Properties:
+      DBSubnetGroupDescription: subnetgroup created by cloudformation
+      SubnetIds:
+        - !Ref PrivateSubnetA
+        - !Ref PrivateSubnetC
+      Tags:
+        - Key: Name
+          Value: cf-dbsubnetgroup
