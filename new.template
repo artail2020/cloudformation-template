@@ -210,9 +210,7 @@ Resources:
           IpProtocol: tcp
       SecurityGroupEgress:
         CidrIp: 0.0.0.0/0
-        FromPort: 80
-        ToPort: 80
-        IpProtocol: tcp
+        IpProtocol: -1
       VpcId: !Ref VPC
   SecurityGroupELB:
     Type: AWS::EC2::SecurityGroup
@@ -226,9 +224,7 @@ Resources:
           IpProtocol: tcp
       SecurityGroupEgress:
         CidrIp: 0.0.0.0/0
-        FromPort: 80
-        ToPort: 80
-        IpProtocol: tcp
+        IpProtocol: -1
       VpcId: !Ref VPC
   SecurityGroupRDS:
     Type: AWS::EC2::SecurityGroup
