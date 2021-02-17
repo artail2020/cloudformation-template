@@ -169,6 +169,7 @@ Resources:
       Tags:
         - Key: Name
           Value: test-cf-ec2-1a
+      IamInstanceProfile: !Ref InstanceProfileEC2
   EC2C:
     Type: AWS::EC2::Instance
     Properties:
@@ -193,6 +194,7 @@ Resources:
       Tags:
         - Key: Name
           Value: test-cf-ec2-1c
+      IamInstanceProfile: !Ref InstanceProfileEC2
   # SecurityGroup
   SecurityGroupEC2:
     Type: AWS::EC2::SecurityGroup
@@ -372,3 +374,50 @@ Resources:
       Tags:
         - Key: Name
           Value: cf-dbsubnetgroup
+  # S3 Bucket
+  S3Bucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      AccelerateConfiguration:
+        - AccelerationStatus: Suspended
+      AccessControl: Private
+      BucketName: artail-cf-test-bucket
+      ObjectLockEnabled: false
+      PublicAccessBlockConfiguration:
+        - BlockPublicAcls: true
+          BlockPublicPolicy: true
+          IgnorePublicAcls: true
+          RestrictPublicBuckets: true
+      Tags:
+        - Key: Name
+          Value: artail-cf-test-bucket
+      VersioningConfiguration:
+        - Status: Suspended
+  # IAM Role
+  RoleEC2:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Effect: Allow
+            Principal:
+              - Service: ec2.amazonaws.com
+            Action: sts:AssumeRole
+      Description: Allows EC2 instances to call AWS services on your behalf.
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/AmazonS3FullAccess
+      MaxSessionDuration: 3600
+      Path: /
+      RoleName: Allow_AwsS3FullAccess_cf
+      Tags:
+        - Key: Name
+          Value: Allow_AwsS3FullAccess_cf
+  # IAM InstanceProfile
+  InstanceProfileEC2:
+    Type: AWS::IAM::InstanceProfile
+    Properties:
+      InstanceProfileName: Allow_AwsS3FullAccess_cf
+      Path: /
+      Roles:
+        - !Ref RoleEC2
