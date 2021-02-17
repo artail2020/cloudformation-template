@@ -402,7 +402,8 @@ Resources:
         Statement:
           - Effect: Allow
             Principal:
-              - Service: ec2.amazonaws.com
+              Service:
+                - ec2.amazonaws.com
             Action:
               - sts:AssumeRole
       Description: Allows EC2 instances to call AWS services on your behalf.
