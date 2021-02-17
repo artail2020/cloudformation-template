@@ -379,7 +379,7 @@ Resources:
     Type: AWS::S3::Bucket
     Properties:
       AccelerateConfiguration:
-        - AccelerationStatus: Suspended
+        AccelerationStatus: Suspended
       AccessControl: Private
       BucketName: artail-cf-test-bucket
       ObjectLockEnabled: false
@@ -392,7 +392,7 @@ Resources:
         - Key: Name
           Value: artail-cf-test-bucket
       VersioningConfiguration:
-        - Status: Suspended
+        Status: Suspended
   # IAM Role
   RoleEC2:
     Type: AWS::IAM::Role
