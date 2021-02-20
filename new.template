@@ -15,6 +15,12 @@ Parameters:
   DBPassword:
     Description: RDS master user password
     Type: String
+  GitUserName:
+    Description: Git User Name
+    Type: String
+  GitUserEmail:
+    Description: Git Email Address
+    Type: String
 Resources:
   # VPC
   VPC:
@@ -158,14 +164,9 @@ Resources:
           SubnetId: !Ref PublicSubnetA
           GroupSet:
             - !Ref SecurityGroupEC2
-      UserData: !Base64 |
-        #!/bin/bash
-        sudo yum update -y
-        sudo yum remove mariadb-libs -y
-        sudo yum install mysql mysql-devel -y
-        sudo amazon-linux-extras install nginx1 -y
-        sudo systemctl start nginx
-        sudo systemctl enable nginx
+      LaunchTemplate:
+        LaunchTemplateId: !Ref LaunchTemplate
+        Version: !GetAtt LaunchTemplate.LatestVersionNumber
       Tags:
         - Key: Name
           Value: test-cf-ec2-1a
@@ -183,18 +184,51 @@ Resources:
           SubnetId: !Ref PublicSubnetC
           GroupSet:
             - !Ref SecurityGroupEC2
-      UserData: !Base64 |
-        #!/bin/bash
-        sudo yum update -y
-        sudo yum remove mariadb-libs -y
-        sudo yum install mysql mysql-devel -y
-        sudo amazon-linux-extras install nginx1 -y
-        sudo systemctl start nginx
-        sudo systemctl enable nginx
+      LaunchTemplate:
+        LaunchTemplateId: !Ref LaunchTemplate
+        Version: !GetAtt LaunchTemplate.LatestVersionNumber
       Tags:
         - Key: Name
           Value: test-cf-ec2-1c
       IamInstanceProfile: !Ref InstanceProfileEC2
+  # LaunchTemplate
+  LaunchTemplate:
+    Type: AWS::EC2::LaunchTemplate
+    Properties:
+      LaunchTemplateName: sample-cf-launch-template
+      LaunchTemplateData:
+        UserData:
+          Fn::Base64: !Sub |
+            #!/bin/bash
+            sudo sed -i -e 's/ZONE="UTC"/# ZONE="UTC"\nZONE="Japan"/g' /etc/sysconfig/clock
+            sudo ln -sf /usr/share/zoneinfo/Japan /etc/localtime
+            sudo yum update -y
+            sudo yum remove mariadb-libs -y
+            sudo yum install git gcc gcc-c++ make openssl-devel zlib-devel readline-devel mysql mysql-devel golang fuse -y
+            sudo amazon-linux-extras install nginx1 -y
+            sudo systemctl start nginx
+            sudo systemctl enable nginx
+            git config --global user.name "${GitUserName}"
+            git config --global user.email "${GitUserEmail}"
+            git clone https://github.com/sstephenson/rbenv.git ~/.rbenv
+            sudo git clone https://github.com/sstephenson/ruby-build.git ~/.rbenv/plugins/ruby-build
+            echo 'export PATH="$HOME/.rbenv/bin:$PATH"' >> ~/.bash_profile
+            echo 'eval "$(rbenv init -)"' >> ~/.bash_profile
+            source .bash_profile
+            rbenv rehash
+            rbenv install -v 2.7.2
+            rbenv global 2.7.2
+            rbenv rehash
+            gem install rails -v 6.0.3.4
+            gem install bundler
+            curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.34.0/install.sh | bash
+            . ~/.nvm/nvm.sh
+            nvm install node
+            curl -o- -L https://yarnpkg.com/install.sh | bash
+            export PATH="$HOME/.yarn/bin:$HOME/.config/yarn/global/node_modules/.bin:$PATH"
+            export GOPATH=$HOME/go
+            go get github.com/kahing/goofys
+            go install github.com/kahing/goofys
   # SecurityGroup
   SecurityGroupEC2:
     Type: AWS::EC2::SecurityGroup
@@ -210,6 +244,14 @@ Resources:
           FromPort: 22
           ToPort: 22
           IpProtocol: tcp
+        - SourceSecurityGroupId: !Ref SecurityGroupELB
+          FromPort: 443
+          ToPort: 443
+          IpProtocol: tcp
+        - SourceSecurityGroupId: !Ref SecurityGroupELB
+          FromPort: 3000
+          ToPort: 3000
+          IpProtocol: tcp
       SecurityGroupEgress:
         CidrIp: 0.0.0.0/0
         IpProtocol: -1
@@ -223,6 +265,10 @@ Resources:
         - CidrIp: 0.0.0.0/0
           FromPort: 80
           ToPort: 80
+          IpProtocol: tcp
+        - CidrIp: 0.0.0.0/0
+          FromPort: 443
+          ToPort: 443
           IpProtocol: tcp
       SecurityGroupEgress:
         CidrIp: 0.0.0.0/0
