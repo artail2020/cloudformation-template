@@ -200,14 +200,15 @@ Resources:
         UserData:
           Fn::Base64: !Sub |
             #!/bin/bash
-            sudo sed -i -e 's/ZONE="UTC"/# ZONE="UTC"\nZONE="Japan"/g' /etc/sysconfig/clock
-            sudo ln -sf /usr/share/zoneinfo/Japan /etc/localtime
-            sudo yum update -y
-            sudo yum remove mariadb-libs -y
-            sudo yum install git gcc gcc-c++ make openssl-devel zlib-devel readline-devel mysql mysql-devel golang fuse -y
-            sudo amazon-linux-extras install nginx1 -y
-            sudo systemctl start nginx
-            sudo systemctl enable nginx
+            sed -i -e 's/ZONE="UTC"/# ZONE="UTC"\nZONE="Japan"/g' /etc/sysconfig/clock
+            ln -sf /usr/share/zoneinfo/Japan /etc/localtime
+            yum update -y
+            yum remove mariadb-libs -y
+            yum install git gcc gcc-c++ make openssl-devel zlib-devel readline-devel mysql mysql-devel golang fuse -y
+            amazon-linux-extras install nginx1 -y
+            systemctl start nginx
+            systemctl enable nginx
+            su - ec2-user
             git config --global user.name "${GitUserName}"
             git config --global user.email "${GitUserEmail}"
             git clone https://github.com/sstephenson/rbenv.git ~/.rbenv
