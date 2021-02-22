@@ -205,7 +205,7 @@ Resources:
             git clone https://github.com/sstephenson/rbenv.git /opt/rbenv
             touch /etc/profile.d/rbenv.sh
             echo 'export RBENV_ROOT="/opt/rbenv"' >> /etc/profile.d/rbenv.sh
-            echo 'export PATH="${RBENV_ROOT}/bin:${PATH}"' >> /etc/profile.d/rbenv.sh
+            echo 'export PATH="${!RBENV_ROOT}/bin:${!PATH}"' >> /etc/profile.d/rbenv.sh
             echo 'eval "$(rbenv init -)"' >> /etc/profile.d/rbenv.sh
             git clone https://github.com/sstephenson/ruby-build.git /opt/rbenv/plugins/ruby-build
             chown -R ec2-user:ec2-user /opt/rbenv
