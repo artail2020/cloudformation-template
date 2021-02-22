@@ -15,12 +15,6 @@ Parameters:
   DBPassword:
     Description: RDS master user password
     Type: String
-  GitUserName:
-    Description: Git User Name
-    Type: String
-  GitUserEmail:
-    Description: Git Email Address
-    Type: String
 Resources:
   # VPC
   VPC:
@@ -208,27 +202,21 @@ Resources:
             amazon-linux-extras install nginx1 -y
             systemctl start nginx
             systemctl enable nginx
-            sudo -u ec2-user git config --global user.name "${GitUserName}"
-            sudo -u ec2-user git config --global user.email "${GitUserEmail}"
-            sudo -u ec2-user git clone https://github.com/sstephenson/rbenv.git ~/.rbenv
-            sudo -u ec2-user sudo git clone https://github.com/sstephenson/ruby-build.git ~/.rbenv/plugins/ruby-build
-            sudo -u ec2-user echo 'export PATH="$HOME/.rbenv/bin:$PATH"' >> ~/.bash_profile
-            sudo -u ec2-user echo 'eval "$(rbenv init -)"' >> ~/.bash_profile
-            sudo -u ec2-user source .bash_profile
-            sudo -u ec2-user rbenv rehash
-            sudo -u ec2-user rbenv install -v 2.7.2
-            sudo -u ec2-user rbenv global 2.7.2
-            sudo -u ec2-user rbenv rehash
-            sudo -u ec2-user gem install rails -v 6.0.3.4
-            sudo -u ec2-user gem install bundler
-            sudo -u ec2-user curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.34.0/install.sh | bash
-            sudo -u ec2-user . ~/.nvm/nvm.sh
-            sudo -u ec2-user nvm install node
-            sudo -u ec2-user curl -o- -L https://yarnpkg.com/install.sh | bash
-            sudo -u ec2-user export PATH="$HOME/.yarn/bin:$HOME/.config/yarn/global/node_modules/.bin:$PATH"
-            sudo -u ec2-user export GOPATH=$HOME/go
-            sudo -u ec2-user go get github.com/kahing/goofys
-            sudo -u ec2-user go install github.com/kahing/goofys
+            git clone https://github.com/sstephenson/rbenv.git /opt/rbenv
+            touch /etc/profile.d/rbenv.sh
+            echo 'export RBENV_ROOT="/opt/rbenv"' >> /etc/profile.d/rbenv.sh
+            echo 'export PATH="${RBENV_ROOT}/bin:${PATH}"' >> /etc/profile.d/rbenv.sh
+            echo 'eval "$(rbenv init -)"' >> /etc/profile.d/rbenv.sh
+            git clone https://github.com/sstephenson/ruby-build.git /opt/rbenv/plugins/ruby-build
+            chown -R ec2-user:ec2-user /opt/rbenv
+            chmod -R 775 /opt/rbenv
+            source /etc/profile.d/rbenv.sh
+            rbenv rehash
+            rbenv install -v 2.7.2
+            rbenv global 2.7.2
+            rbenv rehash
+            gem install rails -v 6.0.3.4
+            gem install bundler
   # SecurityGroup
   SecurityGroupEC2:
     Type: AWS::EC2::SecurityGroup
