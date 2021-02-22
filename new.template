@@ -217,6 +217,11 @@ Resources:
             rbenv rehash
             gem install rails -v 6.0.3.4
             gem install bundler
+            export GOPATH=/opt/go
+            go get github.com/kahing/goofys
+            go install github.com/kahing/goofys
+            chown -R ec2-user:ec2-user /opt/go
+            chmod -R 775 /opt/go
   # SecurityGroup
   SecurityGroupEC2:
     Type: AWS::EC2::SecurityGroup
