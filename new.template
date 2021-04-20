@@ -241,7 +241,6 @@ Resources:
     Type: AWS::EC2::SecurityGroup
     Properties:
       GroupDescription: EC2 Security Group
-      GroupName: ec2-security-group
       SecurityGroupIngress:
         - SourceSecurityGroupId: !Ref SecurityGroupELB
           FromPort: 80
@@ -262,12 +261,14 @@ Resources:
       SecurityGroupEgress:
         - CidrIp: 0.0.0.0/0
           IpProtocol: "-1"
+      Tags:
+        - Key: Name
+          Value: ec2-security-group
       VpcId: !Ref VPC
   SecurityGroupELB:
     Type: AWS::EC2::SecurityGroup
     Properties:
       GroupDescription: ELB Security Group
-      GroupName: elb-security-group
       SecurityGroupIngress:
         - CidrIp: 0.0.0.0/0
           FromPort: 80
@@ -280,12 +281,14 @@ Resources:
       SecurityGroupEgress:
         - CidrIp: 0.0.0.0/0
           IpProtocol: "-1"
+      Tags:
+        - Key: Name
+          Value: elb-security-group
       VpcId: !Ref VPC
   SecurityGroupRDS:
     Type: AWS::EC2::SecurityGroup
     Properties:
       GroupDescription: RDS Security Group
-      GroupName: rds-security-group
       SecurityGroupIngress:
         - SourceSecurityGroupId: !Ref SecurityGroupEC2
           FromPort: 3306
@@ -296,6 +299,9 @@ Resources:
           FromPort: 3306
           ToPort: 3306
           IpProtocol: tcp
+      Tags:
+        - Key: Name
+          Value: rds-security-group
       VpcId: !Ref VPC
   # LoadBalancer
   ElasticLoadBalancer:
@@ -315,7 +321,6 @@ Resources:
           Value: "false"
         - Key: routing.http2.enabled
           Value: "true"
-      Name: elb-cf-sample
       Scheme: internet-facing
       SecurityGroups:
         - !Ref SecurityGroupELB
@@ -337,9 +342,11 @@ Resources:
       HealthyThresholdCount: 5
       Matcher:
         HttpCode: "200"
-      Name: tgt-cf-sample
       Port: 80
       Protocol: HTTP
+      Tags:
+        - Key: Name
+          Value: tgt-cf-sample
       TargetGroupAttributes:
         - Key: deregistration_delay.timeout_seconds
           Value: "300"
