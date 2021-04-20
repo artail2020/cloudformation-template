@@ -1,10 +1,37 @@
 AWSTemplateFormatVersion: 2010-09-09
+Metadata:
+  AWS::CloudFormation::Interface:
+    ParameterGroups:
+      -
+        Label:
+          Default: VPC config
+        Parameters:
+          - CidrBlock
+      -
+        Label:
+          Default: Subnet config
+        Parameters:
+          - AvailabilityZone1a
+          - AvailabilityZone1c
+      -
+        Label:
+          Default: EC2 config
+        Parameters:
+          - EC2ImageId
+          - KeyName
+          - MyIP
+      -
+        Label:
+          Default: RDS Config
+        Parameters:
+          - DBUser
+          - DBPassword
 Parameters:
   KeyName:
     Description: The EC2 Key Pair to allow SSH access to the instance
     Type: AWS::EC2::KeyPair::KeyName
   EC2ImageId:
-    Type: AWS::SSM::Parameter::Value<String>
+    Type: AWS::EC2::Image::Id
     Default: /aws/service/ami-amazon-linux-latest/amzn2-ami-hvm-x86_64-gp2
   MyIP:
     Description: IP address allowed to access EC2
@@ -15,12 +42,25 @@ Parameters:
   DBPassword:
     Description: RDS master user password
     Type: String
+    NoEcho: true
+  AvailabilityZone1a:
+    Description: Availability Zone A
+    Type: AWS::EC2::AvailabilityZone::Name
+    Default: ap-northeast-1a
+  AvailabilityZone1c:
+    Description: Availability Zone C
+    Type: AWS::EC2::AvailabilityZone::Name
+    Default: ap-northeast-1c
+  CidrBlock:
+    Description: IP range
+    Type: String
+    Default: 10.0.0.0/16
 Resources:
   # VPC
   VPC:
     Type: AWS::EC2::VPC
     Properties:
-      CidrBlock: 10.0.0.0/16
+      CidrBlock: !Ref CidrBlock
       EnableDnsHostnames: true
       EnableDnsSupport: true
       InstanceTenancy: default
@@ -87,8 +127,8 @@ Resources:
     Type: AWS::EC2::Subnet
     Properties:
       VpcId: !Ref VPC
-      AvailabilityZone: ap-northeast-1a
-      CidrBlock: 10.0.1.0/24
+      AvailabilityZone: !Ref AvailabilityZone1a
+      CidrBlock: !Select [ 0, !Cidr [ !GetAtt VPC.CidrBlock, 1, 8 ]]
       MapPublicIpOnLaunch: true
       Tags:
         - Key: Name
@@ -97,8 +137,8 @@ Resources:
     Type: AWS::EC2::Subnet
     Properties:
       VpcId: !Ref VPC
-      AvailabilityZone: ap-northeast-1c
-      CidrBlock: 10.0.2.0/24
+      AvailabilityZone: !Ref AvailabilityZone1c
+      CidrBlock: !Select [ 1, !Cidr [ !GetAtt VPC.CidrBlock, 2, 8 ]]
       MapPublicIpOnLaunch: true
       Tags:
         - Key: Name
@@ -106,8 +146,8 @@ Resources:
   PrivateSubnetA:
     Type: AWS::EC2::Subnet
     Properties:
-      AvailabilityZone: ap-northeast-1a
-      CidrBlock: 10.0.10.0/24
+      AvailabilityZone: !Ref AvailabilityZone1a
+      CidrBlock: !Select [ 2, !Cidr [ !GetAtt VPC.CidrBlock, 3, 8 ]]
       MapPublicIpOnLaunch: false
       Tags:
         - Key: Name
@@ -116,8 +156,8 @@ Resources:
   PrivateSubnetC:
     Type: AWS::EC2::Subnet
     Properties:
-      AvailabilityZone: ap-northeast-1c
-      CidrBlock: 10.0.20.0/24
+      AvailabilityZone: !Ref AvailabilityZone1c
+      CidrBlock: !Select [ 3, !Cidr [ !GetAtt VPC.CidrBlock, 4, 8 ]]
       MapPublicIpOnLaunch: false
       Tags:
         - Key: Name
@@ -148,13 +188,13 @@ Resources:
   EC2A:
     Type: AWS::EC2::Instance
     Properties:
-      AvailabilityZone: ap-northeast-1a
+      AvailabilityZone: !Ref AvailabilityZone1a
       ImageId: !Ref EC2ImageId
       KeyName: !Ref KeyName
       InstanceType: t2.micro
       NetworkInterfaces:
         - AssociatePublicIpAddress: true
-          DeviceIndex: 0
+          DeviceIndex: "0"
           SubnetId: !Ref PublicSubnetA
           GroupSet:
             - !Ref SecurityGroupEC2
@@ -168,13 +208,13 @@ Resources:
   EC2C:
     Type: AWS::EC2::Instance
     Properties:
-      AvailabilityZone: ap-northeast-1c
+      AvailabilityZone: !Ref AvailabilityZone1c
       ImageId: !Ref EC2ImageId
       KeyName: !Ref KeyName
       InstanceType: t2.micro
       NetworkInterfaces:
         - AssociatePublicIpAddress: true
-          DeviceIndex: 0
+          DeviceIndex: "0"
           SubnetId: !Ref PublicSubnetC
           GroupSet:
             - !Ref SecurityGroupEC2
@@ -192,7 +232,7 @@ Resources:
       LaunchTemplateName: sample-cf-launch-template
       LaunchTemplateData:
         UserData:
-          Fn::Base64: !Sub |
+          Fn::Base64: |
             #!/bin/bash
             yum update -y
             yum install python3 -y
@@ -220,8 +260,8 @@ Resources:
           ToPort: 3000
           IpProtocol: tcp
       SecurityGroupEgress:
-        CidrIp: 0.0.0.0/0
-        IpProtocol: -1
+        - CidrIp: 0.0.0.0/0
+          IpProtocol: "-1"
       VpcId: !Ref VPC
   SecurityGroupELB:
     Type: AWS::EC2::SecurityGroup
@@ -238,8 +278,8 @@ Resources:
           ToPort: 443
           IpProtocol: tcp
       SecurityGroupEgress:
-        CidrIp: 0.0.0.0/0
-        IpProtocol: -1
+        - CidrIp: 0.0.0.0/0
+          IpProtocol: "-1"
       VpcId: !Ref VPC
   SecurityGroupRDS:
     Type: AWS::EC2::SecurityGroup
@@ -252,10 +292,10 @@ Resources:
           ToPort: 3306
           IpProtocol: tcp
       SecurityGroupEgress:
-        DestinationSecurityGroupId: !Ref SecurityGroupEC2
-        FromPort: 3306
-        ToPort: 3306
-        IpProtocol: tcp
+        - DestinationSecurityGroupId: !Ref SecurityGroupEC2
+          FromPort: 3306
+          ToPort: 3306
+          IpProtocol: tcp
       VpcId: !Ref VPC
   # LoadBalancer
   ElasticLoadBalancer:
@@ -264,17 +304,17 @@ Resources:
       IpAddressType: ipv4
       LoadBalancerAttributes:
         - Key: access_logs.s3.enabled
-          Value: false
+          Value: "false"
         - Key: deletion_protection.enabled
-          Value: false
+          Value: "false"
         - Key: idle_timeout.timeout_seconds
-          Value: 60
+          Value: "60"
         - Key: routing.http.desync_mitigation_mode
           Value: defensive
         - Key: routing.http.drop_invalid_header_fields.enabled
-          Value: false
+          Value: "false"
         - Key: routing.http2.enabled
-          Value: true
+          Value: "true"
       Name: elb-cf-sample
       Scheme: internet-facing
       SecurityGroups:
@@ -282,7 +322,7 @@ Resources:
       Subnets:
         - !Ref PublicSubnetA
         - !Ref PublicSubnetC
-      Tags:                # optional, list of Tag
+      Tags:
         - Key: Name
           Value: elb-cf-sample
       Type: application
@@ -296,19 +336,19 @@ Resources:
       HealthCheckTimeoutSeconds: 5
       HealthyThresholdCount: 5
       Matcher:
-        HttpCode: 200
+        HttpCode: "200"
       Name: tgt-cf-sample
       Port: 80
       Protocol: HTTP
       TargetGroupAttributes:
         - Key: deregistration_delay.timeout_seconds
-          Value: 300
+          Value: "300"
         - Key: stickiness.enabled
-          Value: false
+          Value: "false"
         - Key: load_balancing.algorithm.type
           Value: round_robin
         - Key: slow_start.duration_seconds
-          Value: 0
+          Value: "0"
       Targets:
         - Id: !Ref EC2A
           Port: 80
@@ -330,10 +370,10 @@ Resources:
   RdsMysql:
     Type: AWS::RDS::DBInstance
     Properties:
-      AllocatedStorage: 20
+      AllocatedStorage: "20"
       AllowMajorVersionUpgrade: true
       AutoMinorVersionUpgrade: true
-      AvailabilityZone: ap-northeast-1a
+      AvailabilityZone: !Ref AvailabilityZone1a
       BackupRetentionPeriod: 7
       CopyTagsToSnapshot: true
       DBInstanceClass: db.t2.micro
@@ -350,7 +390,7 @@ Resources:
       MaxAllocatedStorage: 1000
       MonitoringInterval: 0
       MultiAZ: false
-      Port: 3306
+      Port: "3306"
       PreferredBackupWindow: 18:00-18:30
       PreferredMaintenanceWindow: mon:03:00-mon:03:30
       PubliclyAccessible: false
