@@ -22,6 +22,7 @@ Metadata:
           - DBUser
           - DBPassword
           - DBInstanceClass
+          - DBCharSetCode
 Parameters:
   KeyName:
     Description: The EC2 Key Pair to allow SSH access to the instance
@@ -51,6 +52,14 @@ Parameters:
     Description: DB Instance Class
     Type: String
     Default: db.t2.micro
+  DBCharSetCode:
+    Description: DB Character Set Code
+    Type: String
+    Default: utf8mb4
+  StackEnv:
+    Description: Stack Environment
+    Type: String
+    Default: dev
 Resources:
   # VPC
   VPC:
@@ -427,11 +436,12 @@ Resources:
       Description: sample parameter cloudformation
       Family: mysql8.0
       Parameters:
-        character_set_client: utf8
-        character_set_connection: utf8
-        character_set_database: utf8
-        character_set_results: utf8
-        character_set_server: utf8
+        character_set_client: !Ref DBCharSetCode
+        character_set_connection: !Ref DBCharSetCode
+        character_set_database: !Ref DBCharSetCode
+        character_set_results: !Ref DBCharSetCode
+        character_set_server: !Ref DBCharSetCode
+        collation_server: utf8mb4_ja_0900_as_cs_ks
       Tags:
         - Key: Name
           Value: paramgroup-cf-mysql
