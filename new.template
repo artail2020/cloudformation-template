@@ -7,6 +7,7 @@ Metadata:
           Default: VPC config
         Parameters:
           - CidrBlock
+          - StackEnv
       -
         Label:
           Default: EC2 config
@@ -59,7 +60,6 @@ Parameters:
   StackEnv:
     Description: Stack Environment
     Type: String
-    Default: dev
 Resources:
   # VPC
   VPC:
@@ -71,14 +71,18 @@ Resources:
       InstanceTenancy: default
       Tags:
         - Key: Name
-          Value: TestVPC
+          Value: !Sub ${AWS::StackName}-${StackEnv}-vpc
+        - Key: Env
+          Value: !Ref StackEnv
   # InternetGateway
   InternetGateway:
     Type: AWS::EC2::InternetGateway
     Properties:
       Tags:
         - Key: Name
-          Value: TestInternetGateway
+          Value: !Sub ${AWS::StackName}-${StackEnv}-igw
+        - Key: Env
+          Value: !Ref StackEnv
   # RouteTable
   PublicRouteTableA:
     Type: AWS::EC2::RouteTable
@@ -86,27 +90,35 @@ Resources:
       VpcId: !Ref VPC
       Tags:
         - Key: Name
-          Value: TestRouteTableA
+          Value: !Sub ${AWS::StackName}-${StackEnv}-public-rtb00
+        - Key: Env
+          Value: !Ref StackEnv
   PublicRouteTableC:
     Type: AWS::EC2::RouteTable
     Properties:
       VpcId: !Ref VPC
       Tags:
         - Key: Name
-          Value: TestRouteTableC
+          Value: !Sub ${AWS::StackName}-${StackEnv}-public-rtb01
+        - Key: Env
+          Value: !Ref StackEnv
   PrivateRouteTableA:
     Type: AWS::EC2::RouteTable
     Properties:
       Tags:
         - Key: Name
-          Value: TestRouteTableA-Private
+          Value: !Sub ${AWS::StackName}-${StackEnv}-private-rtb00
+        - Key: Env
+          Value: !Ref StackEnv
       VpcId: !Ref VPC
   PrivateRouteTableC:
     Type: AWS::EC2::RouteTable
     Properties:
       Tags:
         - Key: Name
-          Value: TestRouteTableC-Private
+          Value: !Sub ${AWS::StackName}-${StackEnv}-private-rtb01
+        - Key: Env
+          Value: !Ref StackEnv
       VpcId: !Ref VPC
   # GatewayAttachment
   GatewayAttachment:
@@ -141,7 +153,9 @@ Resources:
       MapPublicIpOnLaunch: true
       Tags:
         - Key: Name
-          Value: TestPublicSubnet-East1a
+          Value: !Sub ${AWS::StackName}-${StackEnv}-public-subnet00
+        - Key: Env
+          Value: !Ref StackEnv
   PublicSubnetC:
     Type: AWS::EC2::Subnet
     Properties:
@@ -153,7 +167,9 @@ Resources:
       MapPublicIpOnLaunch: true
       Tags:
         - Key: Name
-          Value: TestPublicSubnet-East1c
+          Value: !Sub ${AWS::StackName}-${StackEnv}-public-subnet01
+        - Key: Env
+          Value: !Ref StackEnv
   PrivateSubnetA:
     Type: AWS::EC2::Subnet
     Properties:
@@ -164,7 +180,9 @@ Resources:
       MapPublicIpOnLaunch: false
       Tags:
         - Key: Name
-          Value: TestPrivateSubnet-East1a
+          Value: !Sub ${AWS::StackName}-${StackEnv}-private-subnet00
+        - Key: Env
+          Value: !Ref StackEnv
       VpcId: !Ref VPC
   PrivateSubnetC:
     Type: AWS::EC2::Subnet
@@ -176,7 +194,9 @@ Resources:
       MapPublicIpOnLaunch: false
       Tags:
         - Key: Name
-          Value: TestPrivateSubnet-East1c
+          Value: !Sub ${AWS::StackName}-${StackEnv}-private-subnet01
+        - Key: Env
+          Value: !Ref StackEnv
       VpcId: !Ref VPC
   # SubnetRouteTableAssociation
   SubnetRouteTableAssociation1a:
