@@ -6,8 +6,8 @@ Metadata:
         Label:
           Default: VPC config
         Parameters:
-          - CidrBlock
           - StackEnv
+          - CidrBlock
       -
         Label:
           Default: EC2 config
@@ -25,15 +25,26 @@ Metadata:
           - DBInstanceClass
           - DBCharSetCode
 Parameters:
-  KeyName:
-    Description: The EC2 Key Pair to allow SSH access to the instance
-    Type: AWS::EC2::KeyPair::KeyName
+  StackEnv:
+    Description: Stack Environment
+    Type: String
+  CidrBlock:
+    Description: IP range
+    Type: String
+    Default: 10.0.0.0/16
   EC2ImageId:
     Type: AWS::SSM::Parameter::Value<AWS::EC2::Image::Id>
     Default: /aws/service/ami-amazon-linux-latest/amzn2-ami-hvm-x86_64-gp2
+  KeyName:
+    Description: The EC2 Key Pair to allow SSH access to the instance
+    Type: AWS::EC2::KeyPair::KeyName
   MyIP:
     Description: IP address allowed to access EC2
     Type: String
+  InstanceType:
+    Description: EC2 Instance Type
+    Type: String
+    Default: t2.micro
   DBUser:
     Description: RDS master user name
     Type: String
@@ -41,14 +52,6 @@ Parameters:
     Description: RDS master user password
     Type: String
     NoEcho: true
-  CidrBlock:
-    Description: IP range
-    Type: String
-    Default: 10.0.0.0/16
-  InstanceType:
-    Description: EC2 Instance Type
-    Type: String
-    Default: t2.micro
   DBInstanceClass:
     Description: DB Instance Class
     Type: String
@@ -57,9 +60,6 @@ Parameters:
     Description: DB Character Set Code
     Type: String
     Default: utf8mb4
-  StackEnv:
-    Description: Stack Environment
-    Type: String
 Resources:
   # VPC
   VPC:
@@ -235,12 +235,11 @@ Resources:
           SubnetId: !Ref PublicSubnetA
           GroupSet:
             - !Ref SecurityGroupEC2
-      LaunchTemplate:
-        LaunchTemplateId: !Ref LaunchTemplate
-        Version: !GetAtt LaunchTemplate.LatestVersionNumber
       Tags:
         - Key: Name
-          Value: test-cf-ec2-1a
+          Value: !Sub ${AWS::StackName}-${StackEnv}-app00
+        - Key: Env
+          Value: !Ref StackEnv
       IamInstanceProfile: !Ref InstanceProfileEC2
   EC2C:
     Type: AWS::EC2::Instance
@@ -257,24 +256,12 @@ Resources:
           SubnetId: !Ref PublicSubnetC
           GroupSet:
             - !Ref SecurityGroupEC2
-      LaunchTemplate:
-        LaunchTemplateId: !Ref LaunchTemplate
-        Version: !GetAtt LaunchTemplate.LatestVersionNumber
       Tags:
         - Key: Name
-          Value: test-cf-ec2-1c
+          Value: !Sub ${AWS::StackName}-${StackEnv}-app01
+        - Key: Env
+          Value: !Ref StackEnv
       IamInstanceProfile: !Ref InstanceProfileEC2
-  # LaunchTemplate
-  LaunchTemplate:
-    Type: AWS::EC2::LaunchTemplate
-    Properties:
-      LaunchTemplateName: sample-cf-launch-template
-      LaunchTemplateData:
-        UserData:
-          Fn::Base64: |
-            #!/bin/bash
-            yum update -y
-            yum install python3 -y
   # SecurityGroup
   SecurityGroupEC2:
     Type: AWS::EC2::SecurityGroup
