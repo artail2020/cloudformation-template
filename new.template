@@ -276,20 +276,14 @@ Resources:
           FromPort: 22
           ToPort: 22
           IpProtocol: tcp
-        - SourceSecurityGroupId: !Ref SecurityGroupELB
-          FromPort: 443
-          ToPort: 443
-          IpProtocol: tcp
-        - SourceSecurityGroupId: !Ref SecurityGroupELB
-          FromPort: 3000
-          ToPort: 3000
-          IpProtocol: tcp
       SecurityGroupEgress:
         - CidrIp: 0.0.0.0/0
           IpProtocol: "-1"
       Tags:
         - Key: Name
-          Value: ec2-security-group
+          Value: !Sub ${AWS::StackName}-${StackEnv}-app-sg
+        - Key: Env
+          Value: !Ref StackEnv
       VpcId: !Ref VPC
   SecurityGroupELB:
     Type: AWS::EC2::SecurityGroup
@@ -309,7 +303,9 @@ Resources:
           IpProtocol: "-1"
       Tags:
         - Key: Name
-          Value: elb-security-group
+          Value: !Sub ${AWS::StackName}-${StackEnv}-elb-sg
+        - Key: Env
+          Value: !Ref StackEnv
       VpcId: !Ref VPC
   SecurityGroupRDS:
     Type: AWS::EC2::SecurityGroup
@@ -327,7 +323,9 @@ Resources:
           IpProtocol: tcp
       Tags:
         - Key: Name
-          Value: rds-security-group
+          Value: !Sub ${AWS::StackName}-${StackEnv}-rds-sg
+        - Key: Env
+          Value: !Ref StackEnv
       VpcId: !Ref VPC
   # LoadBalancer
   ElasticLoadBalancer:
@@ -342,11 +340,12 @@ Resources:
         - Key: idle_timeout.timeout_seconds
           Value: "60"
         - Key: routing.http.desync_mitigation_mode
-          Value: defensive
+          Value: "defensive"
         - Key: routing.http.drop_invalid_header_fields.enabled
           Value: "false"
         - Key: routing.http2.enabled
           Value: "true"
+      Name: !Sub ${AWS::StackName}-${StackEnv}-elb
       Scheme: internet-facing
       SecurityGroups:
         - !Ref SecurityGroupELB
@@ -355,7 +354,9 @@ Resources:
         - !Ref PublicSubnetC
       Tags:
         - Key: Name
-          Value: elb-cf-sample
+          Value: !Sub ${AWS::StackName}-${StackEnv}-elb
+        - Key: Env
+          Value: !Ref StackEnv
       Type: application
   TargetGroup:
     Type: AWS::ElasticLoadBalancingV2::TargetGroup
@@ -368,18 +369,21 @@ Resources:
       HealthyThresholdCount: 5
       Matcher:
         HttpCode: "200"
+      Name: !Sub ${AWS::StackName}-${StackEnv}-tg
       Port: 80
       Protocol: HTTP
       Tags:
         - Key: Name
-          Value: tgt-cf-sample
+          Value: !Sub ${AWS::StackName}-${StackEnv}-tg
+        - Key: Env
+          Value: !Ref StackEnv
       TargetGroupAttributes:
         - Key: deregistration_delay.timeout_seconds
           Value: "300"
         - Key: stickiness.enabled
           Value: "false"
         - Key: load_balancing.algorithm.type
-          Value: round_robin
+          Value: "round_robin"
         - Key: slow_start.duration_seconds
           Value: "0"
       Targets:
@@ -412,7 +416,7 @@ Resources:
       BackupRetentionPeriod: 7
       CopyTagsToSnapshot: true
       DBInstanceClass: !Ref DBInstanceClass
-      DBInstanceIdentifier: database-cf-1
+      DBInstanceIdentifier: !Sub ${AWS::StackName}-${StackEnv}-rds
       DBParameterGroupName: !Ref DBParameterGroup
       DBSubnetGroupName: !Ref DBSubnetGroup
       DeletionProtection: false
@@ -433,7 +437,9 @@ Resources:
       StorageType: gp2
       Tags:
         - Key: Name
-          Value: mysql-database-cf-1
+          Value: !Sub ${AWS::StackName}-${StackEnv}-rds
+        - Key: Env
+          Value: !Ref StackEnv
       VPCSecurityGroups:
         - !Ref SecurityGroupRDS
   # DBParameterGroup
@@ -451,18 +457,23 @@ Resources:
         collation_server: utf8mb4_ja_0900_as_cs_ks
       Tags:
         - Key: Name
-          Value: paramgroup-cf-mysql
+          Value: !Sub ${AWS::StackName}-${StackEnv}-rds-pg
+        - Key: Env
+          Value: !Ref StackEnv
   # DBSubnetGroup
   DBSubnetGroup:
     Type: AWS::RDS::DBSubnetGroup
     Properties:
       DBSubnetGroupDescription: subnetgroup created by cloudformation
+      DBSubnetGroupName: !Sub ${AWS::StackName}-${StackEnv}-rds-subnetg
       SubnetIds:
         - !Ref PrivateSubnetA
         - !Ref PrivateSubnetC
       Tags:
         - Key: Name
-          Value: cf-dbsubnetgroup
+          Value: !Sub ${AWS::StackName}-${StackEnv}-rds-subnetg
+        - Key: Env
+          Value: !Ref StackEnv
   # S3 Bucket
   S3Bucket:
     Type: AWS::S3::Bucket
@@ -470,7 +481,7 @@ Resources:
       AccelerateConfiguration:
         AccelerationStatus: Suspended
       AccessControl: Private
-      BucketName: artail-cf-test-bucket
+      BucketName: !Sub ${AWS::StackName}-${StackEnv}-contents-${AWS::AccountId}
       ObjectLockEnabled: false
       PublicAccessBlockConfiguration:
         BlockPublicAcls: true
@@ -479,7 +490,9 @@ Resources:
         RestrictPublicBuckets: true
       Tags:
         - Key: Name
-          Value: artail-cf-test-bucket
+          Value: !Sub ${AWS::StackName}-${StackEnv}-contents-${AWS::AccountId}
+        - Key: Env
+          Value: !Ref StackEnv
       VersioningConfiguration:
         Status: Suspended
   # IAM Role
@@ -500,15 +513,17 @@ Resources:
         - arn:aws:iam::aws:policy/AmazonS3FullAccess
       MaxSessionDuration: 3600
       Path: /
-      RoleName: Allow_AwsS3FullAccess_cf
+      RoleName: !Sub ${AWS::StackName}-${StackEnv}-app-role
       Tags:
         - Key: Name
-          Value: Allow_AwsS3FullAccess_cf
+          Value: !Sub ${AWS::StackName}-${StackEnv}-app-role
+        - Key: Env
+          Value: !Ref StackEnv
   # IAM InstanceProfile
   InstanceProfileEC2:
     Type: AWS::IAM::InstanceProfile
     Properties:
-      InstanceProfileName: Allow_AwsS3FullAccess_cf
+      InstanceProfileName: !Sub ${AWS::StackName}-${StackEnv}-app-ip
       Path: /
       Roles:
         - !Ref RoleEC2
