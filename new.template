@@ -454,7 +454,7 @@ Resources:
         character_set_database: !Ref DBCharSetCode
         character_set_results: !Ref DBCharSetCode
         character_set_server: !Ref DBCharSetCode
-        collation_server: utf8mb4_ja_0900_as_cs_ks
+        collation_server: utf8mb4_general_ci
       Tags:
         - Key: Name
           Value: !Sub ${AWS::StackName}-${StackEnv}-rds-pg
