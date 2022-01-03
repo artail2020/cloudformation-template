@@ -74,7 +74,7 @@ Resources:
       GatewayId: !Ref EnvIgw
     DependsOn: IgwAttachment
   # Subnet
-  PublicSubnetA:
+  PublicSubnet1A:
     Type: AWS::EC2::Subnet
     Properties:
       VpcId: !Ref EnvVPC
@@ -88,7 +88,7 @@ Resources:
           Value: !Sub ${AWS::StackName}-${StackEnv}-public-subnet00
         - Key: Env
           Value: !Ref StackEnv
-  PublicSubnetC:
+  PublicSubnet1C:
     Type: AWS::EC2::Subnet
     Properties:
       VpcId: !Ref EnvVPC
@@ -102,7 +102,7 @@ Resources:
           Value: !Sub ${AWS::StackName}-${StackEnv}-public-subnet01
         - Key: Env
           Value: !Ref StackEnv
-  PrivateSubnetA:
+  PrivateSubnet1A:
     Type: AWS::EC2::Subnet
     Properties:
       AvailabilityZone: !Select
@@ -116,7 +116,7 @@ Resources:
         - Key: Env
           Value: !Ref StackEnv
       VpcId: !Ref EnvVPC
-  PrivateSubnetC:
+  PrivateSubnet1C:
     Type: AWS::EC2::Subnet
     Properties:
       AvailabilityZone: !Select
@@ -134,20 +134,51 @@ Resources:
   PublicSubnetRtbAssociationA:
     Type: AWS::EC2::SubnetRouteTableAssociation
     Properties:
-      SubnetId: !Ref PublicSubnetA
+      SubnetId: !Ref PublicSubnet1A
       RouteTableId: !Ref PublicRtb
   PublicSubnetRtbAssociationC:
     Type: AWS::EC2::SubnetRouteTableAssociation
     Properties:
-      SubnetId: !Ref PublicSubnetC
+      SubnetId: !Ref PublicSubnet1C
       RouteTableId: !Ref PublicRtb
   PrivateSubnetRtbAssociationA:
     Type: AWS::EC2::SubnetRouteTableAssociation
     Properties:
-      SubnetId: !Ref PrivateSubnetA
+      SubnetId: !Ref PrivateSubnet1A
       RouteTableId: !Ref PrivateRtb
   PrivateSubnetRtbAssociationC:
     Type: AWS::EC2::SubnetRouteTableAssociation
     Properties:
-      SubnetId: !Ref PrivateSubnetC
+      SubnetId: !Ref PrivateSubnet1C
       RouteTableId: !Ref PrivateRtb
+Outputs:
+  StackEnv:
+    Description: Stack Environment of VPC
+    Value: !Ref StackEnv
+    Export:
+      Name: !Sub "${AWS::StackName}-Env"
+  StackVPC:
+    Description: The ID of the VPC
+    Value: !Ref EnvVPC
+    Export:
+      Name: !Sub "${AWS::StackName}-VpcId"
+  StackPublicSubnet1A:
+    Description: The ID of the VPC Subnet
+    Value: !Ref PublicSubnet1A
+    Export:
+      Name: !Sub "${AWS::StackName}-PublicSubnet1A"
+  StackPublicSubnet1C:
+    Description: The ID of the VPC Subnet
+    Value: !Ref PublicSubnet1C
+    Export:
+      Name: !Sub "${AWS::StackName}-PublicSubnet1C"
+  StackPrivateSubnet1A:
+    Description: The ID of the VPC Subnet
+    Value: !Ref PrivateSubnet1A
+    Export:
+      Name: !Sub "${AWS::StackName}-PrivateSubnet1A"
+  StackPrivateSubnet1C:
+    Description: The ID of the VPC Subnet
+    Value: !Ref PrivateSubnet1C
+    Export:
+      Name: !Sub "${AWS::StackName}-PrivateSubnet1C"
