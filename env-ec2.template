@@ -1,5 +1,5 @@
 AWSTemplateFormatVersion: 2010-09-09
-Description: create EC2, IAM Role
+Description: create EC2
 Metadata:
   AWS::CloudFormation::Interface:
     ParameterGroups:
@@ -10,8 +10,9 @@ Metadata:
           - VPCStackName
           - EC2ImageId
           - KeyName
-          - MyIP
           - InstanceType
+          - EBSDeviceName
+          - EBSVolumeType
 Parameters:
   VPCStackName:
     Description: Base VPC StackName
@@ -23,13 +24,18 @@ Parameters:
   KeyName:
     Description: The EC2 Key Pair to allow SSH access to the instance
     Type: AWS::EC2::KeyPair::KeyName
-  MyIP:
-    Description: IP address allowed to access EC2
-    Type: String
   InstanceType:
     Description: EC2 Instance Type
     Type: String
     Default: t2.micro
+  EBSDeviceName:
+    Description: EBS Device Name
+    Type: String
+    Default: /dev/xvda
+  EBSVolumeType:
+    Description: EBS Volume Type
+    Type: String
+    Default: gp2
 Resources:
   # EC2起動テンプレート
   EC2LaunchTemplate:
@@ -38,12 +44,13 @@ Resources:
       LaunchTemplateData:
         BlockDeviceMappings:
           -
-            DeviceName: /dev/xvda
+            DeviceName: !Ref EBSDeviceName
             Ebs:
               VolumeSize: 8
-              VolumeType: gp2
+              VolumeType: !Ref EBSVolumeType
         IamInstanceProfile:
-          Arn: !GetAtt InstanceProfileEC2.Arn
+          Arn:
+            Fn::ImportValue: !Sub "${VPCStackName}-EC2-InstanceProfileArn"
         ImageId: !Ref EC2ImageId
         InstanceType: !Ref InstanceType
         KeyName: !Ref KeyName
@@ -63,7 +70,7 @@ Resources:
           SubnetId:
             Fn::ImportValue: !Sub "${VPCStackName}-PublicSubnet1A"
           GroupSet:
-            - !Ref SecurityGroupEC2
+            - Fn::ImportValue: !Sub "${VPCStackName}-EC2-SecurityGroupId"
       Tags:
         - Key: Name
           Value: !Sub
@@ -84,7 +91,7 @@ Resources:
           SubnetId:
             Fn::ImportValue: !Sub "${VPCStackName}-PublicSubnet1C"
           GroupSet:
-            - !Ref SecurityGroupEC2
+            - Fn::ImportValue: !Sub "${VPCStackName}-EC2-SecurityGroupId"
       Tags:
         - Key: Name
           Value: !Sub
@@ -93,70 +100,3 @@ Resources:
         - Key: Env
           Value:
             Fn::ImportValue: !Sub "${VPCStackName}-Env"
-  # SecurityGroup
-  SecurityGroupEC2:
-    Type: AWS::EC2::SecurityGroup
-    Properties:
-      GroupDescription: EC2 Security Group
-      SecurityGroupIngress:
-        # - SourceSecurityGroupId: !Ref SecurityGroupELB
-        - CidrIp: !Ref MyIP
-          FromPort: 80
-          ToPort: 80
-          IpProtocol: tcp
-        - CidrIp: !Ref MyIP
-          FromPort: 22
-          ToPort: 22
-          IpProtocol: tcp
-      SecurityGroupEgress:
-        - CidrIp: 0.0.0.0/0
-          IpProtocol: "-1"
-      Tags:
-        - Key: Name
-          Value: !Sub
-            - ${VPCStackName}-${Env}-app-sg
-            - Env: { Fn::ImportValue: !Sub "${VPCStackName}-Env" }
-        - Key: Env
-          Value:
-            Fn::ImportValue: !Sub "${VPCStackName}-Env"
-      VpcId:
-        Fn::ImportValue: !Sub "${VPCStackName}-VpcId"
-  # IAM Role
-  RoleEC2:
-    Type: AWS::IAM::Role
-    Properties:
-      AssumeRolePolicyDocument:
-        Version: 2012-10-17
-        Statement:
-          - Effect: Allow
-            Principal:
-              Service:
-                - ec2.amazonaws.com
-            Action:
-              - sts:AssumeRole
-      Description: Allows EC2 instances to call AWS services on your behalf.
-      ManagedPolicyArns:
-        - arn:aws:iam::aws:policy/AmazonS3FullAccess
-      MaxSessionDuration: 3600
-      Path: /
-      RoleName: !Sub
-        - ${VPCStackName}-${Env}-app-role
-        - Env: { Fn::ImportValue: !Sub "${VPCStackName}-Env" }
-      Tags:
-        - Key: Name
-          Value: !Sub
-            - ${VPCStackName}-${Env}-app-role
-            - Env: { Fn::ImportValue: !Sub "${VPCStackName}-Env" }
-        - Key: Env
-          Value:
-            Fn::ImportValue: !Sub "${VPCStackName}-Env"
-  # IAM InstanceProfile
-  InstanceProfileEC2:
-    Type: AWS::IAM::InstanceProfile
-    Properties:
-      InstanceProfileName: !Sub
-        - ${VPCStackName}-${Env}-app-ip
-        - Env: { Fn::ImportValue: !Sub "${VPCStackName}-Env" }
-      Path: /
-      Roles:
-        - !Ref RoleEC2

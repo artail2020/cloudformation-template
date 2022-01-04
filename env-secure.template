@@ -1,0 +1,154 @@
+AWSTemplateFormatVersion: 2010-09-09
+Description: create security group, IAM role
+Metadata:
+  AWS::CloudFormation::Interface:
+    ParameterGroups:
+      -
+        Label:
+          Default: Security config
+        Parameters:
+          - VPCStackName
+          - MyIP
+Parameters:
+  VPCStackName:
+    Description: Base VPC StackName
+    Type: String
+  MyIP:
+    Description: IP address allowed to access EC2
+    Type: String
+Resources:
+  # SecurityGroup
+  EnvSgEC2:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: EC2 Security Group
+      SecurityGroupIngress:
+        - SourceSecurityGroupId: !Ref EnvSgElb
+          FromPort: 80
+          ToPort: 80
+          IpProtocol: tcp
+        - CidrIp: !Ref MyIP
+          FromPort: 22
+          ToPort: 22
+          IpProtocol: tcp
+      SecurityGroupEgress:
+        - CidrIp: 0.0.0.0/0
+          IpProtocol: "-1"
+      Tags:
+        - Key: Name
+          Value: !Sub
+            - ${VPCStackName}-${Env}-app-sg
+            - Env: { Fn::ImportValue: !Sub "${VPCStackName}-Env" }
+        - Key: Env
+          Value:
+            Fn::ImportValue: !Sub "${VPCStackName}-Env"
+      VpcId:
+        Fn::ImportValue: !Sub "${VPCStackName}-VpcId"
+  EnvSgElb:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: ELB Security Group
+      SecurityGroupIngress:
+        - CidrIp: 0.0.0.0/0
+          FromPort: 80
+          ToPort: 80
+          IpProtocol: tcp
+        - CidrIp: 0.0.0.0/0
+          FromPort: 443
+          ToPort: 443
+          IpProtocol: tcp
+      SecurityGroupEgress:
+        - CidrIp: 0.0.0.0/0
+          IpProtocol: "-1"
+      Tags:
+        - Key: Name
+          Value: !Sub
+            - ${VPCStackName}-${Env}-elb-sg
+            - Env: { Fn::ImportValue: !Sub "${VPCStackName}-Env" }
+        - Key: Env
+          Value:
+            Fn::ImportValue: !Sub "${VPCStackName}-Env"
+      VpcId:
+        Fn::ImportValue: !Sub "${VPCStackName}-VpcId"
+  EnvSgRds:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: RDS Security Group
+      SecurityGroupIngress:
+        - SourceSecurityGroupId: !Ref EnvSgEC2
+          FromPort: 3306
+          ToPort: 3306
+          IpProtocol: tcp
+      SecurityGroupEgress:
+        - CidrIp: 0.0.0.0/0
+          IpProtocol: "-1"
+      Tags:
+        - Key: Name
+          Value: !Sub
+            - ${VPCStackName}-${Env}-rds-sg
+            - Env: { Fn::ImportValue: !Sub "${VPCStackName}-Env" }
+        - Key: Env
+          Value:
+            Fn::ImportValue: !Sub "${VPCStackName}-Env"
+      VpcId:
+        Fn::ImportValue: !Sub "${VPCStackName}-VpcId"
+  # IAM Role
+  RoleEC2ToS3:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service:
+                - ec2.amazonaws.com
+            Action:
+              - sts:AssumeRole
+      Description: Allows EC2 instances to call AWS services on your behalf.
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/AmazonS3FullAccess
+      MaxSessionDuration: 3600
+      Path: /
+      RoleName: !Sub
+        - ${VPCStackName}-${Env}-app-role
+        - Env: { Fn::ImportValue: !Sub "${VPCStackName}-Env" }
+      Tags:
+        - Key: Name
+          Value: !Sub
+            - ${VPCStackName}-${Env}-app-role
+            - Env: { Fn::ImportValue: !Sub "${VPCStackName}-Env" }
+        - Key: Env
+          Value:
+            Fn::ImportValue: !Sub "${VPCStackName}-Env"
+  # IAM InstanceProfile
+  InstanceProfileEC2:
+    Type: AWS::IAM::InstanceProfile
+    Properties:
+      InstanceProfileName: !Sub
+        - ${VPCStackName}-${Env}-app-ip
+        - Env: { Fn::ImportValue: !Sub "${VPCStackName}-Env" }
+      Path: /
+      Roles:
+        - !Ref RoleEC2ToS3
+Outputs:
+  StackSgEC2:
+    Description: The SecurityGroup of the EC2
+    Value: !Ref EnvSgEC2
+    Export:
+      Name: !Sub "${VPCStackName}-EC2-SecurityGroupId"
+  StackSgELB:
+    Description: The SecurityGroup of the ELB
+    Value: !Ref EnvSgElb
+    Export:
+      Name: !Sub "${VPCStackName}-ELB-SecurityGroupId"
+  StackSgRds:
+    Description: The SecurityGroup of the RDS
+    Value: !Ref EnvSgRds
+    Export:
+      Name: !Sub "${VPCStackName}-RDS-SecurityGroupId"
+  StackInstanceProfileArn:
+    Description: The InstanceProfile of the EC2 to S3
+    Value: !GetAtt InstanceProfileEC2.Arn
+    Export:
+      Name: !Sub "${VPCStackName}-EC2-InstanceProfileArn"
