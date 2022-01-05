@@ -1,0 +1,114 @@
+AWSTemplateFormatVersion: 2010-09-09
+Metadata:
+  AWS::CloudFormation::Interface:
+    ParameterGroups:
+      -
+        Label:
+          Default: RDS Config
+        Parameters:
+          - VPCStackName
+          - DBUser
+          - DBPassword
+          - DBInstanceClass
+          - DBCharSetCode
+Parameters:
+  VPCStackName:
+    Description: Base VPC StackName
+    Type: String
+  DBUser:
+    Description: RDS master user name
+    Type: String
+  DBPassword:
+    Description: RDS master user password
+    Type: String
+    NoEcho: true
+  DBInstanceClass:
+    Description: DB Instance Class
+    Type: String
+    Default: db.t2.micro
+  DBCharSetCode:
+    Description: DB Character Set Code
+    Type: String
+    Default: utf8mb4
+Resources:
+  # RDS
+  RdsMysql:
+    Type: AWS::RDS::DBInstance
+    Properties:
+      AllocatedStorage: "20"
+      AllowMajorVersionUpgrade: true
+      AutoMinorVersionUpgrade: true
+      BackupRetentionPeriod: 7
+      CopyTagsToSnapshot: true
+      DBInstanceClass: !Ref DBInstanceClass
+      DBInstanceIdentifier: !Sub
+        - ${VPCStackName}-${Env}-rds
+        - Env: { Fn::ImportValue: !Sub "${VPCStackName}-Env" }
+      DBParameterGroupName: !Ref DBParameterGroup
+      DBSubnetGroupName: !Ref DBSubnetGroup
+      DeletionProtection: false
+      EnablePerformanceInsights: false
+      Engine: mysql
+      EngineVersion: 8.0.20
+      LicenseModel: general-public-license
+      MasterUserPassword: !Ref DBPassword
+      MasterUsername: !Ref DBUser
+      MaxAllocatedStorage: 1000
+      MonitoringInterval: 0
+      MultiAZ: false
+      Port: "3306"
+      PreferredBackupWindow: 18:00-18:30
+      PreferredMaintenanceWindow: mon:03:00-mon:03:30
+      PubliclyAccessible: false
+      StorageEncrypted: false
+      StorageType: gp2
+      Tags:
+        - Key: Name
+          Value: !Sub
+            - ${VPCStackName}-${Env}-rds
+            - Env: { Fn::ImportValue: !Sub "${VPCStackName}-Env" }
+        - Key: Env
+          Value:
+            Fn::ImportValue: !Sub "${VPCStackName}-Env"
+      VPCSecurityGroups:
+        - Fn::ImportValue: !Sub "${VPCStackName}-RDS-SecurityGroupId"
+  # DBParameterGroup
+  DBParameterGroup:
+    Type: AWS::RDS::DBParameterGroup
+    Properties:
+      Description: sample parameter cloudformation
+      Family: mysql8.0
+      Parameters:
+        character_set_client: !Ref DBCharSetCode
+        character_set_connection: !Ref DBCharSetCode
+        character_set_database: !Ref DBCharSetCode
+        character_set_results: !Ref DBCharSetCode
+        character_set_server: !Ref DBCharSetCode
+        collation_server: utf8mb4_general_ci
+      Tags:
+        - Key: Name
+          Value: !Sub
+            - ${VPCStackName}-${Env}-rds-pg
+            - Env: { Fn::ImportValue: !Sub "${VPCStackName}-Env" }
+        - Key: Env
+          Value:
+            Fn::ImportValue: !Sub "${VPCStackName}-Env"
+  # DBSubnetGroup
+  DBSubnetGroup:
+    Type: AWS::RDS::DBSubnetGroup
+    Properties:
+      DBSubnetGroupDescription: subnetgroup created by cloudformation
+      DBSubnetGroupName: !Sub
+        - ${VPCStackName}-${Env}-rds-subnetgroup
+        - Env: { Fn::ImportValue: !Sub "${VPCStackName}-Env" }
+      SubnetIds:
+        - Fn::ImportValue: !Sub "${VPCStackName}-PrivateSubnet1A"
+        - Fn::ImportValue: !Sub "${VPCStackName}-PrivateSubnet1C"
+      Tags:
+        - Key: Name
+          Value: !Sub
+            - ${VPCStackName}-${Env}-rds-subnetgroup
+            - Env: { Fn::ImportValue: !Sub "${VPCStackName}-Env" }
+        - Key: Env
+          Value:
+            Fn::ImportValue: !Sub "${VPCStackName}-Env"
