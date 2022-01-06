@@ -8,7 +8,6 @@ Metadata:
         Parameters:
           - VPCStackName
           - DBUser
-          - DBPassword
           - DBInstanceClass
           - DBCharSetCode
 Parameters:
@@ -18,10 +17,6 @@ Parameters:
   DBUser:
     Description: RDS master user name
     Type: String
-  DBPassword:
-    Description: RDS master user password
-    Type: String
-    NoEcho: true
   DBInstanceClass:
     Description: DB Instance Class
     Type: String
@@ -38,6 +33,9 @@ Resources:
       AllocatedStorage: "20"
       AllowMajorVersionUpgrade: true
       AutoMinorVersionUpgrade: true
+      AvailabilityZone: !Select
+        - 0
+        - Fn::GetAZs: !Ref AWS::Region
       BackupRetentionPeriod: 7
       CopyTagsToSnapshot: true
       DBInstanceClass: !Ref DBInstanceClass
@@ -51,8 +49,10 @@ Resources:
       Engine: mysql
       EngineVersion: 8.0.20
       LicenseModel: general-public-license
-      MasterUserPassword: !Ref DBPassword
-      MasterUsername: !Ref DBUser
+      MasterUserPassword:
+        !Sub "{{resolve:secretsmanager:${RDSPasswordSecrets}::password}}"
+      MasterUsername:
+        !Sub "{{resolve:secretsmanager:${RDSPasswordSecrets}::username}}"
       MaxAllocatedStorage: 1000
       MonitoringInterval: 0
       MultiAZ: false
@@ -108,6 +108,23 @@ Resources:
         - Key: Name
           Value: !Sub
             - ${VPCStackName}-${Env}-rds-subnetgroup
+            - Env: { Fn::ImportValue: !Sub "${VPCStackName}-Env" }
+        - Key: Env
+          Value:
+            Fn::ImportValue: !Sub "${VPCStackName}-Env"
+  RDSPasswordSecrets:
+    Type: AWS::SecretsManager::Secret
+    Properties:
+      Description: This is my rds instance secret
+      GenerateSecretString:
+        ExcludeCharacters: "\"@/\\"
+        GenerateStringKey: password
+        PasswordLength: 16
+        SecretStringTemplate: !Sub '{"username": "${DBUser}"}'
+      Tags:
+        - Key: AppName
+          Value: !Sub
+            - ${VPCStackName}-${Env}-MyApp
             - Env: { Fn::ImportValue: !Sub "${VPCStackName}-Env" }
         - Key: Env
           Value:
