@@ -26,6 +26,24 @@ Parameters:
     Type: String
     Default: utf8mb4
 Resources:
+  # Secrets RDS MasterUserPassword
+  RDSPasswordSecrets:
+    Type: AWS::SecretsManager::Secret
+    Properties:
+      Description: This is my rds instance secret
+      GenerateSecretString:
+        ExcludeCharacters: "\"@/\\"
+        GenerateStringKey: password
+        PasswordLength: 16
+        SecretStringTemplate: !Sub '{"username": "${DBUser}"}'
+      Tags:
+        - Key: AppName
+          Value: !Sub
+            - ${VPCStackName}-${Env}-MyApp
+            - Env: { Fn::ImportValue: !Sub "${VPCStackName}-Env" }
+        - Key: Env
+          Value:
+            Fn::ImportValue: !Sub "${VPCStackName}-Env"
   # RDS
   RdsMysql:
     Type: AWS::RDS::DBInstance
@@ -108,23 +126,6 @@ Resources:
         - Key: Name
           Value: !Sub
             - ${VPCStackName}-${Env}-rds-subnetgroup
-            - Env: { Fn::ImportValue: !Sub "${VPCStackName}-Env" }
-        - Key: Env
-          Value:
-            Fn::ImportValue: !Sub "${VPCStackName}-Env"
-  RDSPasswordSecrets:
-    Type: AWS::SecretsManager::Secret
-    Properties:
-      Description: This is my rds instance secret
-      GenerateSecretString:
-        ExcludeCharacters: "\"@/\\"
-        GenerateStringKey: password
-        PasswordLength: 16
-        SecretStringTemplate: !Sub '{"username": "${DBUser}"}'
-      Tags:
-        - Key: AppName
-          Value: !Sub
-            - ${VPCStackName}-${Env}-MyApp
             - Env: { Fn::ImportValue: !Sub "${VPCStackName}-Env" }
         - Key: Env
           Value:
