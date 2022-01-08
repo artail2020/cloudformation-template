@@ -1,0 +1,44 @@
+AWSTemplateFormatVersion: 2010-09-09
+Metadata:
+  AWS::CloudFormation::Interface:
+    ParameterGroups:
+      -
+        Label:
+          Default: S3 config
+        Parameters:
+          - VPCStackName
+Parameters:
+  VPCStackName:
+    Description: Base VPC StackName
+    Type: String
+Resources:
+  # S3 Bucket
+  EnvS3Bucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      AccelerateConfiguration:
+        AccelerationStatus: Suspended
+      AccessControl: Private
+      BucketEncryption:
+        ServerSideEncryptionConfiguration:
+          - ServerSideEncryptionByDefault:
+              SSEAlgorithm: AES256
+      BucketName: !Sub
+        - ${VPCStackName}-${Env}-contents-${AWS::Region}-${AWS::AccountId}
+        - Env: { Fn::ImportValue: !Sub "${VPCStackName}-Env" }
+      ObjectLockEnabled: false
+      PublicAccessBlockConfiguration:
+        BlockPublicAcls: true
+        BlockPublicPolicy: true
+        IgnorePublicAcls: true
+        RestrictPublicBuckets: true
+      Tags:
+        - Key: Name
+          Value: !Sub
+            - ${VPCStackName}-${Env}-contents-${AWS::Region}-${AWS::AccountId}
+            - Env: { Fn::ImportValue: !Sub "${VPCStackName}-Env" }
+        - Key: Env
+          Value:
+            Fn::ImportValue: !Sub "${VPCStackName}-Env"
+      VersioningConfiguration:
+        Status: Suspended
