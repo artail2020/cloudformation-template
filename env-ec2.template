@@ -100,3 +100,14 @@ Resources:
         - Key: Env
           Value:
             Fn::ImportValue: !Sub "${VPCStackName}-Env"
+Outputs:
+  StackEC2InstanceA:
+    Description: The EC2 Instance ID of Subnet A
+    Value: !Ref EC2InstanceA
+    Export:
+      Name: !Sub "${VPCStackName}-EC2A-InstanceId"
+  StackEC2InstanceC:
+    Description: The EC2 Instance ID of Subnet C
+    Value: !Ref EC2InstanceC
+    Export:
+      Name: !Sub "${VPCStackName}-EC2C-InstanceId"
