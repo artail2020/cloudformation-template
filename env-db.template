@@ -30,6 +30,9 @@ Resources:
   RDSPasswordSecrets:
     Type: AWS::SecretsManager::Secret
     Properties:
+      Name: !Sub
+        - ${VPCStackName}-${Env}-rds-secret
+        - Env: { Fn::ImportValue: !Sub "${VPCStackName}-Env" }
       Description: This is my rds instance secret
       GenerateSecretString:
         ExcludeCharacters: "\"@/\\"
