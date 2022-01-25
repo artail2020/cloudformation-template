@@ -38,7 +38,8 @@ Resources:
         - Key: Name
           Value: !Sub
             - ${VPCStackName}-${Env}-app-sg
-            - Env: { Fn::ImportValue: !Sub "${VPCStackName}-Env" }
+            - Env:
+                Fn::ImportValue: !Sub "${VPCStackName}-Env"
         - Key: Env
           Value:
             Fn::ImportValue: !Sub "${VPCStackName}-Env"
@@ -64,7 +65,8 @@ Resources:
         - Key: Name
           Value: !Sub
             - ${VPCStackName}-${Env}-elb-sg
-            - Env: { Fn::ImportValue: !Sub "${VPCStackName}-Env" }
+            - Env:
+                Fn::ImportValue: !Sub "${VPCStackName}-Env"
         - Key: Env
           Value:
             Fn::ImportValue: !Sub "${VPCStackName}-Env"
@@ -86,7 +88,8 @@ Resources:
         - Key: Name
           Value: !Sub
             - ${VPCStackName}-${Env}-rds-sg
-            - Env: { Fn::ImportValue: !Sub "${VPCStackName}-Env" }
+            - Env:
+                Fn::ImportValue: !Sub "${VPCStackName}-Env"
         - Key: Env
           Value:
             Fn::ImportValue: !Sub "${VPCStackName}-Env"
@@ -112,12 +115,14 @@ Resources:
       Path: /
       RoleName: !Sub
         - ${VPCStackName}-${Env}-app-role
-        - Env: { Fn::ImportValue: !Sub "${VPCStackName}-Env" }
+        - Env:
+            Fn::ImportValue: !Sub "${VPCStackName}-Env"
       Tags:
         - Key: Name
           Value: !Sub
             - ${VPCStackName}-${Env}-app-role
-            - Env: { Fn::ImportValue: !Sub "${VPCStackName}-Env" }
+            - Env:
+                Fn::ImportValue: !Sub "${VPCStackName}-Env"
         - Key: Env
           Value:
             Fn::ImportValue: !Sub "${VPCStackName}-Env"
@@ -127,7 +132,8 @@ Resources:
     Properties:
       InstanceProfileName: !Sub
         - ${VPCStackName}-${Env}-app-ip
-        - Env: { Fn::ImportValue: !Sub "${VPCStackName}-Env" }
+        - Env:
+            Fn::ImportValue: !Sub "${VPCStackName}-Env"
       Path: /
       Roles:
         - !Ref RoleEC2ToS3

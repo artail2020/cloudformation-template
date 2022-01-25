@@ -33,7 +33,8 @@ Resources:
           Value: "true"
       Name: !Sub
         - ${VPCStackName}-${Env}-elb
-        - Env: { Fn::ImportValue: !Sub "${VPCStackName}-Env" }
+        - Env:
+            Fn::ImportValue: !Sub "${VPCStackName}-Env"
       Scheme: internet-facing
       SecurityGroups:
         - Fn::ImportValue: !Sub "${VPCStackName}-ELB-SecurityGroupId"
@@ -44,7 +45,8 @@ Resources:
         - Key: Name
           Value: !Sub
             - ${VPCStackName}-${Env}-elb
-            - Env: { Fn::ImportValue: !Sub "${VPCStackName}-Env" }
+            - Env:
+                Fn::ImportValue: !Sub "${VPCStackName}-Env"
         - Key: Env
           Value:
             Fn::ImportValue: !Sub "${VPCStackName}-Env"
@@ -62,14 +64,16 @@ Resources:
         HttpCode: "200"
       Name: !Sub
         - ${VPCStackName}-${Env}-elb-tg
-        - Env: { Fn::ImportValue: !Sub "${VPCStackName}-Env" }
+        - Env:
+            Fn::ImportValue: !Sub "${VPCStackName}-Env"
       Port: 80
       Protocol: HTTP
       Tags:
         - Key: Name
           Value: !Sub
             - ${VPCStackName}-${Env}-elb-tg
-            - Env: { Fn::ImportValue: !Sub "${VPCStackName}-Env" }
+            - Env:
+                Fn::ImportValue: !Sub "${VPCStackName}-Env"
         - Key: Env
           Value:
             Fn::ImportValue: !Sub "${VPCStackName}-Env"

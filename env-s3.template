@@ -26,7 +26,8 @@ Resources:
               SSEAlgorithm: AES256
       BucketName: !Sub
         - ${VPCStackName}-${Env}-contents-${AWS::Region}-${AWS::AccountId}
-        - Env: { Fn::ImportValue: !Sub "${VPCStackName}-Env" }
+        - Env:
+            Fn::ImportValue: !Sub "${VPCStackName}-Env"
       ObjectLockEnabled: false
       PublicAccessBlockConfiguration:
         BlockPublicAcls: true
@@ -37,7 +38,8 @@ Resources:
         - Key: Name
           Value: !Sub
             - ${VPCStackName}-${Env}-contents-${AWS::Region}-${AWS::AccountId}
-            - Env: { Fn::ImportValue: !Sub "${VPCStackName}-Env" }
+            - Env:
+                Fn::ImportValue: !Sub "${VPCStackName}-Env"
         - Key: Env
           Value:
             Fn::ImportValue: !Sub "${VPCStackName}-Env"

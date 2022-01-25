@@ -33,7 +33,8 @@ Resources:
     Properties:
       Name: !Sub
         - ${VPCStackName}-${Env}-rds-secret
-        - Env: { Fn::ImportValue: !Sub "${VPCStackName}-Env" }
+        - Env:
+            Fn::ImportValue: !Sub "${VPCStackName}-Env"
       Description: This is my rds instance secret
       GenerateSecretString:
         ExcludeCharacters: "\"@/\\"
@@ -44,7 +45,8 @@ Resources:
         - Key: AppName
           Value: !Sub
             - ${VPCStackName}-${Env}-MyApp
-            - Env: { Fn::ImportValue: !Sub "${VPCStackName}-Env" }
+            - Env:
+                Fn::ImportValue: !Sub "${VPCStackName}-Env"
         - Key: Env
           Value:
             Fn::ImportValue: !Sub "${VPCStackName}-Env"
@@ -63,7 +65,8 @@ Resources:
       DBInstanceClass: !Ref DBInstanceClass
       DBInstanceIdentifier: !Sub
         - ${VPCStackName}-${Env}-rds
-        - Env: { Fn::ImportValue: !Sub "${VPCStackName}-Env" }
+        - Env:
+            Fn::ImportValue: !Sub "${VPCStackName}-Env"
       DBParameterGroupName: !Ref DBParameterGroup
       DBSubnetGroupName: !Ref DBSubnetGroup
       DeletionProtection: false
@@ -88,7 +91,8 @@ Resources:
         - Key: Name
           Value: !Sub
             - ${VPCStackName}-${Env}-rds
-            - Env: { Fn::ImportValue: !Sub "${VPCStackName}-Env" }
+            - Env:
+                Fn::ImportValue: !Sub "${VPCStackName}-Env"
         - Key: Env
           Value:
             Fn::ImportValue: !Sub "${VPCStackName}-Env"
@@ -111,7 +115,8 @@ Resources:
         - Key: Name
           Value: !Sub
             - ${VPCStackName}-${Env}-rds-pg
-            - Env: { Fn::ImportValue: !Sub "${VPCStackName}-Env" }
+            - Env:
+                Fn::ImportValue: !Sub "${VPCStackName}-Env"
         - Key: Env
           Value:
             Fn::ImportValue: !Sub "${VPCStackName}-Env"
@@ -122,7 +127,8 @@ Resources:
       DBSubnetGroupDescription: subnetgroup created by cloudformation
       DBSubnetGroupName: !Sub
         - ${VPCStackName}-${Env}-rds-subnetgroup
-        - Env: { Fn::ImportValue: !Sub "${VPCStackName}-Env" }
+        - Env:
+            Fn::ImportValue: !Sub "${VPCStackName}-Env"
       SubnetIds:
         - Fn::ImportValue: !Sub "${VPCStackName}-PrivateSubnet1A"
         - Fn::ImportValue: !Sub "${VPCStackName}-PrivateSubnet1C"
@@ -130,7 +136,8 @@ Resources:
         - Key: Name
           Value: !Sub
             - ${VPCStackName}-${Env}-rds-subnetgroup
-            - Env: { Fn::ImportValue: !Sub "${VPCStackName}-Env" }
+            - Env:
+                Fn::ImportValue: !Sub "${VPCStackName}-Env"
         - Key: Env
           Value:
             Fn::ImportValue: !Sub "${VPCStackName}-Env"

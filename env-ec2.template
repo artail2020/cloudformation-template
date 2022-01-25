@@ -56,7 +56,8 @@ Resources:
         KeyName: !Ref KeyName
       LaunchTemplateName: !Sub
         - ${VPCStackName}-${Env}-app-template
-        - Env: { Fn::ImportValue: !Sub "${VPCStackName}-Env" }
+        - Env:
+            Fn::ImportValue: !Sub "${VPCStackName}-Env"
   # EC2Instance
   EC2InstanceA:
     Type: AWS::EC2::Instance
@@ -75,7 +76,8 @@ Resources:
         - Key: Name
           Value: !Sub
             - ${VPCStackName}-${Env}-app00
-            - Env: { Fn::ImportValue: !Sub "${VPCStackName}-Env" }
+            - Env:
+                Fn::ImportValue: !Sub "${VPCStackName}-Env"
         - Key: Env
           Value:
             Fn::ImportValue: !Sub "${VPCStackName}-Env"
@@ -96,7 +98,8 @@ Resources:
         - Key: Name
           Value: !Sub
             - ${VPCStackName}-${Env}-app01
-            - Env: { Fn::ImportValue: !Sub "${VPCStackName}-Env" }
+            - Env:
+                Fn::ImportValue: !Sub "${VPCStackName}-Env"
         - Key: Env
           Value:
             Fn::ImportValue: !Sub "${VPCStackName}-Env"
