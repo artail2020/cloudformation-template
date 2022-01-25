@@ -1,0 +1,90 @@
+AWSTemplateFormatVersion: 2010-09-09
+Description: create Bastion instance
+Metadata:
+  AWS::CloudFormation::Interface:
+    ParameterGroups:
+      -
+        Label:
+          Default: Bastion config
+        Parameters:
+          - VPCStackName
+Parameters:
+  VPCStackName:
+    Description: Base VPC StackName
+    Type: String
+Resources:
+  # Bastion InternetGateway
+  BastionIgw:
+    Type: AWS::EC2::InternetGateway
+    Properties:
+      Tags:
+        - Key: Name
+          Value: !Sub
+            - ${VPCStackName}-${Env}-bastion-igw
+            - Env:
+                Fn::ImportValue: !Sub "${VPCStackName}-Env"
+        - Key: Env
+          Value:
+            Fn::ImportValue: !Sub "${VPCStackName}-Env"
+  # Bastion RouteTable
+  BastionRtb:
+    Type: AWS::EC2::RouteTable
+    Properties:
+      VpcId:
+        Fn::ImportValue: !Sub "${VPCStackName}-VpcId"
+      Tags:
+        - Key: Name
+          Value: !Sub
+            - ${VPCStackName}-${Env}-bastion-public-rtb00
+            - Env:
+                Fn::ImportValue: !Sub "${VPCStackName}-Env"
+        - Key: Env
+          Value:
+            Fn::ImportValue: !Sub "${VPCStackName}-Env"
+  # Bastion GatewayAttachment
+  BastionIgwAttachment:
+    Type: AWS::EC2::VPCGatewayAttachment
+    Properties:
+      VpcId:
+        Fn::ImportValue: !Sub "${VPCStackName}-VpcId"
+      InternetGatewayId: !Ref BastionIgw
+  # Bastion Route
+  BastionRtbRoute:
+    Type: AWS::EC2::Route
+    Properties:
+      DestinationCidrBlock: 0.0.0.0/0
+      RouteTableId: !Ref BastionRtb
+      GatewayId: !Ref BastionIgw
+    DependsOn: BastionIgwAttachment
+  # Bastion Subnet
+  BastionSubnet1A:
+    Type: AWS::EC2::Subnet
+    Properties:
+      VpcId:
+        Fn::ImportValue: !Sub "${VPCStackName}-VpcId"
+      AvailabilityZone: !Select
+        - 0
+        - Fn::GetAZs: !Ref AWS::Region
+      CidrBlock: !Select
+        - 255
+        - Fn::Cidr:
+            - Fn::ImportValue: !Sub "${VPCStackName}-VpcCidrBlock"
+            - 256
+            - 8
+      MapPublicIpOnLaunch: true
+      Tags:
+        - Key: Name
+          Value: !Sub
+            - ${VPCStackName}-${Env}-bastion-public-subnet00
+            - Env:
+                Fn::ImportValue: !Sub "${VPCStackName}-Env"
+        - Key: Env
+          Value:
+            Fn::ImportValue: !Sub "${VPCStackName}-Env"
+  # Bastion SubnetRouteTableAssociation
+  BastionSubnetRtbAssociation:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      SubnetId: !Ref BastionSubnet1A
+      RouteTableId: !Ref BastionRtb
+Outputs:

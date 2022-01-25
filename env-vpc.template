@@ -162,6 +162,11 @@ Outputs:
     Value: !Ref EnvVPC
     Export:
       Name: !Sub "${AWS::StackName}-VpcId"
+  StackVPCCidrBlock:
+    Description: The CidrBlock of the VPC
+    Value: !GetAtt EnvVPC.CidrBlock
+    Export:
+      Name: !Sub "${AWS::StackName}-VpcCidrBlock"
   StackPublicSubnet1A:
     Description: The ID of the VPC Subnet
     Value: !Ref PublicSubnet1A
