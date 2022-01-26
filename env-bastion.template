@@ -8,24 +8,29 @@ Metadata:
           Default: Bastion config
         Parameters:
           - VPCStackName
+          - EC2ImageId
+          - KeyName
+          - InstanceType
+          - MyIP
 Parameters:
   VPCStackName:
     Description: Base VPC StackName
     Type: String
+  EC2ImageId:
+    Description: EC2 AMI ID
+    Type: AWS::SSM::Parameter::Value<AWS::EC2::Image::Id>
+    Default: /aws/service/ami-amazon-linux-latest/amzn2-ami-hvm-x86_64-gp2
+  KeyName:
+    Description: The EC2 Key Pair to allow SSH access to the instance
+    Type: AWS::EC2::KeyPair::KeyName
+  InstanceType:
+    Description: EC2 Instance Type
+    Type: String
+    Default: t2.micro
+  MyIP:
+    Description: IP address allowed to access EC2
+    Type: String
 Resources:
-  # Bastion InternetGateway
-  BastionIgw:
-    Type: AWS::EC2::InternetGateway
-    Properties:
-      Tags:
-        - Key: Name
-          Value: !Sub
-            - ${VPCStackName}-${Env}-bastion-igw
-            - Env:
-                Fn::ImportValue: !Sub "${VPCStackName}-Env"
-        - Key: Env
-          Value:
-            Fn::ImportValue: !Sub "${VPCStackName}-Env"
   # Bastion RouteTable
   BastionRtb:
     Type: AWS::EC2::RouteTable
@@ -41,21 +46,14 @@ Resources:
         - Key: Env
           Value:
             Fn::ImportValue: !Sub "${VPCStackName}-Env"
-  # Bastion GatewayAttachment
-  BastionIgwAttachment:
-    Type: AWS::EC2::VPCGatewayAttachment
-    Properties:
-      VpcId:
-        Fn::ImportValue: !Sub "${VPCStackName}-VpcId"
-      InternetGatewayId: !Ref BastionIgw
   # Bastion Route
   BastionRtbRoute:
     Type: AWS::EC2::Route
     Properties:
       DestinationCidrBlock: 0.0.0.0/0
       RouteTableId: !Ref BastionRtb
-      GatewayId: !Ref BastionIgw
-    DependsOn: BastionIgwAttachment
+      GatewayId:
+        Fn::ImportValue: !Sub "${VPCStackName}-IgwId"
   # Bastion Subnet
   BastionSubnet1A:
     Type: AWS::EC2::Subnet
@@ -87,4 +85,98 @@ Resources:
     Properties:
       SubnetId: !Ref BastionSubnet1A
       RouteTableId: !Ref BastionRtb
+  # Bastion EC2Instance
+  BastionInstance:
+    Type: AWS::EC2::Instance
+    Properties:
+      IamInstanceProfile: !Ref BastionInstanceProfile
+      ImageId: !Ref EC2ImageId
+      InstanceType: !Ref InstanceType
+      KeyName: !Ref KeyName
+      NetworkInterfaces:
+        - AssociatePublicIpAddress: true
+          DeviceIndex: "0"
+          SubnetId: !Ref BastionSubnet1A
+          GroupSet:
+            - !Ref BastionSg
+      Tags:
+        - Key: Name
+          Value: !Sub
+            - ${VPCStackName}-${Env}-bastion-server
+            - Env:
+                Fn::ImportValue: !Sub "${VPCStackName}-Env"
+        - Key: Env
+          Value:
+            Fn::ImportValue: !Sub "${VPCStackName}-Env"
+  # Bastion SecurityGroup
+  BastionSg:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: Bastion Security Group
+      SecurityGroupIngress:
+        - CidrIp: !Ref MyIP
+          FromPort: 22
+          ToPort: 22
+          IpProtocol: tcp
+      SecurityGroupEgress:
+        - CidrIp: 0.0.0.0/0
+          IpProtocol: "-1"
+      Tags:
+        - Key: Name
+          Value: !Sub
+            - ${VPCStackName}-${Env}-bastion-sg
+            - Env:
+                Fn::ImportValue: !Sub "${VPCStackName}-Env"
+        - Key: Env
+          Value:
+            Fn::ImportValue: !Sub "${VPCStackName}-Env"
+      VpcId:
+        Fn::ImportValue: !Sub "${VPCStackName}-VpcId"
+  # Bastion IAM Role
+  BastionRoleAdmin:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service:
+                - ec2.amazonaws.com
+            Action:
+              - sts:AssumeRole
+      Description: Allows EC2 instances to call AWS services on your behalf.
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/AdministratorAccess
+      MaxSessionDuration: 3600
+      Path: /
+      RoleName: !Sub
+        - ${VPCStackName}-${Env}-bastion-role
+        - Env:
+            Fn::ImportValue: !Sub "${VPCStackName}-Env"
+      Tags:
+        - Key: Name
+          Value: !Sub
+            - ${VPCStackName}-${Env}-bastion-role
+            - Env:
+                Fn::ImportValue: !Sub "${VPCStackName}-Env"
+        - Key: Env
+          Value:
+            Fn::ImportValue: !Sub "${VPCStackName}-Env"
+  # Bastion IAM InstanceProfile
+  BastionInstanceProfile:
+    Type: AWS::IAM::InstanceProfile
+    Properties:
+      InstanceProfileName: !Sub
+        - ${VPCStackName}-${Env}-bastion-ip
+        - Env:
+            Fn::ImportValue: !Sub "${VPCStackName}-Env"
+      Path: /
+      Roles:
+        - !Ref BastionRoleAdmin
 Outputs:
+  BastionPrivateIp:
+    Description: The PrivateIP of the Bastion Instance
+    Value: !GetAtt BastionInstance.PrivateIp
+    Export:
+      Name: !Sub "${VPCStackName}-Bastion-PrivateIp"
