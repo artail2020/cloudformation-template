@@ -108,6 +108,16 @@ Resources:
         - Key: Env
           Value:
             Fn::ImportValue: !Sub "${VPCStackName}-Env"
+      UserData:
+        Fn::Base64: |
+          #!/bin/bash
+          wget -O /etc/yum.repos.d/jenkins.repo https://pkg.jenkins.io/redhat-stable/jenkins.repo
+          rpm --import https://pkg.jenkins.io/redhat-stable/jenkins.io.key
+          yum upgrade -y
+          amazon-linux-extras install epel java-openjdk11 -y
+          yum install -y jenkins
+          systemctl daemon-reload
+          systemctl start jenkins
   # Bastion SecurityGroup
   BastionSg:
     Type: AWS::EC2::SecurityGroup
@@ -117,6 +127,10 @@ Resources:
         - CidrIp: !Ref MyIP
           FromPort: 22
           ToPort: 22
+          IpProtocol: tcp
+        - CidrIp: !Ref MyIP
+          FromPort: 8080
+          ToPort: 8080
           IpProtocol: tcp
       SecurityGroupEgress:
         - CidrIp: 0.0.0.0/0
