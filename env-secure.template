@@ -8,13 +8,9 @@ Metadata:
           Default: Security config
         Parameters:
           - VPCStackName
-          - MyIP
 Parameters:
   VPCStackName:
     Description: Base VPC StackName
-    Type: String
-  MyIP:
-    Description: IP address allowed to access EC2
     Type: String
 Resources:
   # SecurityGroup
@@ -27,7 +23,8 @@ Resources:
           FromPort: 80
           ToPort: 80
           IpProtocol: tcp
-        - CidrIp: !Ref MyIP
+        - CidrIp:
+            Fn::ImportValue: !Sub "${VPCStackName}-Bastion-PrivateIp"
           FromPort: 22
           ToPort: 22
           IpProtocol: tcp
