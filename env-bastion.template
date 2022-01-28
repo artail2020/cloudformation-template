@@ -111,6 +111,7 @@ Resources:
       UserData:
         Fn::Base64: |
           #!/bin/bash
+          # Java11・Jenkinsインストール
           wget -O /etc/yum.repos.d/jenkins.repo https://pkg.jenkins.io/redhat-stable/jenkins.repo
           rpm --import https://pkg.jenkins.io/redhat-stable/jenkins.io.key
           yum upgrade -y
@@ -118,6 +119,13 @@ Resources:
           yum install -y jenkins
           systemctl daemon-reload
           systemctl start jenkins
+          # AWS CLI バージョン2インストール
+          curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "/tmp/awscliv2.zip"
+          unzip /tmp/awscliv2.zip -d /tmp
+          /tmp/aws/install
+          rm -f /usr/bin/aws /usr/bin/aws_completer
+          # gitインストール
+          yum install -y git
   # Bastion SecurityGroup
   BastionSg:
     Type: AWS::EC2::SecurityGroup
