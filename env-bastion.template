@@ -126,6 +126,10 @@ Resources:
           rm -f /usr/bin/aws /usr/bin/aws_completer
           # gitインストール
           yum install -y git
+          # Basiton→APPサーバ用キーペア生成
+          aws ec2 create-key-pair --key-name bastion-to-app --query 'KeyMaterial' --output text > /home/ec2-user/.ssh/bastion-to-app.pem
+          chmod 400 /home/ec2-user/.ssh/bastion-to-app.pem
+          chown ec2-user:ec2-user /home/ec2-user/.ssh/bastion-to-app.pem
   # Bastion SecurityGroup
   BastionSg:
     Type: AWS::EC2::SecurityGroup
