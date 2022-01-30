@@ -22,7 +22,8 @@ Resources:
       AccessControl: Private
       BucketEncryption:
         ServerSideEncryptionConfiguration:
-          - ServerSideEncryptionByDefault:
+          - BucketKeyEnabled: true
+            ServerSideEncryptionByDefault:
               SSEAlgorithm: AES256
       BucketName: !Sub
         - ${VPCStackName}-${Env}-contents-${AWS::Region}-${AWS::AccountId}
