@@ -172,6 +172,11 @@ Outputs:
     Value: !Ref EnvIgw
     Export:
       Name: !Sub "${AWS::StackName}-IgwId"
+  StackPublicRtbId:
+    Description: The ID of the Public RouteTable
+    Value: !Ref PublicRtb
+    Export:
+      Name: !Sub "${AWS::StackName}-PublicRtbId"
   StackPublicSubnet1A:
     Description: The ID of the VPC Subnet
     Value: !Ref PublicSubnet1A

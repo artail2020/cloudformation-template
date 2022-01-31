@@ -152,6 +152,11 @@ Outputs:
     Value: !Ref EnvSgRds
     Export:
       Name: !Sub "${VPCStackName}-RDS-SecurityGroupId"
+  StackRoleArn:
+    Description: The Role ARN of the EC2 to S3
+    Value: !GetAtt RoleEC2ToS3.Arn
+    Export:
+      Name: !Sub "${VPCStackName}-EC2-RoleArn"
   StackInstanceProfileArn:
     Description: The InstanceProfile of the EC2 to S3
     Value: !GetAtt InstanceProfileEC2.Arn

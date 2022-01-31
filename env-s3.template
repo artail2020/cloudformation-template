@@ -46,3 +46,53 @@ Resources:
             Fn::ImportValue: !Sub "${VPCStackName}-Env"
       VersioningConfiguration:
         Status: Suspended
+  # VPC endpoint to s3
+  VPCEndpointToS3:
+    Type: AWS::EC2::VPCEndpoint
+    Properties:
+      PolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Effect: Allow
+            Principal: "*"
+            Action: "s3:*"
+            Resource:
+              - !GetAtt EnvS3Bucket.Arn
+              - !Sub
+                - "${Arn}/*"
+                - Arn: !GetAtt EnvS3Bucket.Arn
+          - Effect: Allow
+            Principal: "*"
+            Action:
+              - "s3:GetObject"
+            Resource:
+              - "arn:aws:s3:::amazonlinux.*.amazonaws.com/*"
+      RouteTableIds:
+        - Fn::ImportValue: !Sub "${VPCStackName}-PublicRtbId"
+      ServiceName: !Sub "com.amazonaws.${AWS::Region}.s3"
+      VpcEndpointType: Gateway
+      VpcId:
+        Fn::ImportValue: !Sub "${VPCStackName}-VpcId"
+  # BucketPolicy
+  S3BucketPolicy:
+    Type: AWS::S3::BucketPolicy
+    Properties:
+      Bucket: !Ref EnvS3Bucket
+      PolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Effect: Deny
+            Principal:
+              AWS:
+                Fn::ImportValue: !Sub "${VPCStackName}-EC2-RoleArn"
+            Action:
+              - "s3:*"
+            Resource:
+              - !GetAtt EnvS3Bucket.Arn
+              - !Sub
+                - "${Arn}/*"
+                - Arn: !GetAtt EnvS3Bucket.Arn
+            Condition:
+              StringNotEquals:
+                'aws:SourceVpce':
+                  - !Ref VPCEndpointToS3
