@@ -66,7 +66,8 @@ Resources:
             Action:
               - "s3:GetObject"
             Resource:
-              - "arn:aws:s3:::amazonlinux.*.amazonaws.com/*"
+              - !Sub "arn:aws:s3:::amazonlinux.${AWS::Region}.amazonaws.com/*"
+              - !Sub "arn:aws:s3:::amazonlinux-2-repos-${AWS::Region}/*"
       RouteTableIds:
         - Fn::ImportValue: !Sub "${VPCStackName}-PublicRtbId"
       ServiceName: !Sub "com.amazonaws.${AWS::Region}.s3"
