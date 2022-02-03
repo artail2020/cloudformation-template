@@ -114,7 +114,6 @@ Resources:
           # Java11・Jenkinsインストール
           wget -O /etc/yum.repos.d/jenkins.repo https://pkg.jenkins.io/redhat-stable/jenkins.repo
           rpm --import https://pkg.jenkins.io/redhat-stable/jenkins.io.key
-          yum upgrade -y
           amazon-linux-extras install epel java-openjdk11 -y
           yum install -y jenkins
           systemctl daemon-reload
@@ -130,6 +129,13 @@ Resources:
           aws ec2 create-key-pair --key-name bastion-to-app --query 'KeyMaterial' --output text > /home/ec2-user/.ssh/bastion-to-app.pem
           chmod 400 /home/ec2-user/.ssh/bastion-to-app.pem
           chown ec2-user:ec2-user /home/ec2-user/.ssh/bastion-to-app.pem
+          # ansible,python2,botoインストール
+          amazon-linux-extras enable ansible2
+          yum clean metadata
+          yum install -y ansible python2-pip
+          pip install boto boto3
+
+          yum upgrade -y
   # Bastion SecurityGroup
   BastionSg:
     Type: AWS::EC2::SecurityGroup
@@ -201,8 +207,3 @@ Resources:
       Roles:
         - !Ref BastionRoleAdmin
 Outputs:
-  BastionPrivateIp:
-    Description: The PrivateIP of the Bastion Instance
-    Value: !GetAtt BastionInstance.PrivateIp
-    Export:
-      Name: !Sub "${VPCStackName}-Bastion-PrivateIp"

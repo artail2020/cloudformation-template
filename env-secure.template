@@ -8,9 +8,13 @@ Metadata:
           Default: Security config
         Parameters:
           - VPCStackName
+          - BastionPrivateIp
 Parameters:
   VPCStackName:
     Description: Base VPC StackName
+    Type: String
+  BastionPrivateIp:
+    Description: Bastion server Private IP
     Type: String
 Resources:
   # SecurityGroup
@@ -23,10 +27,7 @@ Resources:
           FromPort: 80
           ToPort: 80
           IpProtocol: tcp
-        - CidrIp: !Sub
-            - ${BastionIp}/32
-            - BastionIp:
-                Fn::ImportValue: !Sub "${VPCStackName}-Bastion-PrivateIp"
+        - CidrIp: !Sub "${BastionPrivateIp}/32"
           FromPort: 22
           ToPort: 22
           IpProtocol: tcp
