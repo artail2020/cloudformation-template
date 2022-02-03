@@ -1,0 +1,51 @@
+AWSTemplateFormatVersion: 2010-09-09
+Description: create Auto Scaling Group
+Metadata:
+  AWS::CloudFormation::Interface:
+    ParameterGroups:
+      -
+        Label:
+          Default: ELB config
+        Parameters:
+          - VPCStackName
+Parameters:
+  VPCStackName:
+    Description: Base VPC StackName
+    Type: String
+Resources:
+  # AutoScalingGroup
+  EnvASG:
+    Type: AWS::AutoScaling::AutoScalingGroup
+    Properties:
+      AutoScalingGroupName: !Sub
+        - ${VPCStackName}-${Env}-autoscaling-gp
+        - Env:
+            Fn::ImportValue: !Sub "${VPCStackName}-Env"
+      DesiredCapacity: "2"
+      MaxSize: "4"
+      MinSize: "2"
+      HealthCheckGracePeriod: 300
+      HealthCheckType: ELB
+      LaunchTemplate:
+        LaunchTemplateId:
+          Fn::ImportValue: !Sub "${VPCStackName}-LaunchTemplateId"
+        Version:
+          Fn::ImportValue: !Sub "${VPCStackName}-LaunchTemplateVersion"
+      Tags:
+        - Key: Name
+          PropagateAtLaunch: false
+          Value: !Sub
+            - ${VPCStackName}-${Env}-autoscaling-gp
+            - Env:
+                Fn::ImportValue: !Sub "${VPCStackName}-Env"
+        - Key: Env
+          PropagateAtLaunch: false
+          Value:
+            Fn::ImportValue: !Sub "${VPCStackName}-Env"
+      # ここまで済
+      TargetGroupARNs:                # optional, list of String
+        - String
+      TerminationPolicies:                # optional, list of String
+        - String
+      VPCZoneIdentifier:                # optional, list of String
+        - String

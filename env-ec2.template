@@ -114,3 +114,13 @@ Outputs:
     Value: !Ref EC2InstanceC
     Export:
       Name: !Sub "${VPCStackName}-EC2C-InstanceId"
+  StackEC2LaunchTemplateId:
+    Description: The EC2 LaunchTemplate ID
+    Value: !Ref EC2LaunchTemplate
+    Export:
+      Name: !Sub "${VPCStackName}-LaunchTemplateId"
+  StackEC2LaunchTemplateVersion:
+    Description: The EC2 LaunchTemplate Latest Version
+    Value: !GetAtt EC2LaunchTemplate.LatestVersionNumber
+    Export:
+      Name: !Sub "${VPCStackName}-LaunchTemplateVersion"
