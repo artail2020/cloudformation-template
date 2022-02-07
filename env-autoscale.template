@@ -5,7 +5,7 @@ Metadata:
     ParameterGroups:
       -
         Label:
-          Default: ELB config
+          Default: AutoScaling config
         Parameters:
           - VPCStackName
 Parameters:
@@ -33,19 +33,20 @@ Resources:
           Fn::ImportValue: !Sub "${VPCStackName}-LaunchTemplateVersion"
       Tags:
         - Key: Name
-          PropagateAtLaunch: false
+          PropagateAtLaunch: true
           Value: !Sub
-            - ${VPCStackName}-${Env}-autoscaling-gp
+            - ${VPCStackName}-${Env}-autoscaling-server
             - Env:
                 Fn::ImportValue: !Sub "${VPCStackName}-Env"
         - Key: Env
           PropagateAtLaunch: false
           Value:
             Fn::ImportValue: !Sub "${VPCStackName}-Env"
-      # ここまで済
-      TargetGroupARNs:                # optional, list of String
-        - String
-      TerminationPolicies:                # optional, list of String
-        - String
-      VPCZoneIdentifier:                # optional, list of String
-        - String
+      TargetGroupARNs:
+        - Fn::ImportValue: !Sub "${VPCStackName}-TargetGroupArn"
+      TerminationPolicies:
+        - NewestInstance
+        - ClosestToNextInstanceHour
+      VPCZoneIdentifier:
+        - Fn::ImportValue: !Sub "${VPCStackName}-PublicSubnet1A"
+        - Fn::ImportValue: !Sub "${VPCStackName}-PublicSubnet1C"

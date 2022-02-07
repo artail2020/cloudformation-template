@@ -106,3 +106,9 @@ Resources:
       LoadBalancerArn: !Ref ElasticLoadBalancer
       Port: 80
       Protocol: HTTP
+Outputs:
+  StackTargetGroupArn:
+    Description: The TargetGroup ARN
+    Value: !Ref TargetGroup
+    Export:
+      Name: !Sub "${VPCStackName}-TargetGroupArn"

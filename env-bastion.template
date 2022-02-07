@@ -206,4 +206,3 @@ Resources:
       Path: /
       Roles:
         - !Ref BastionRoleAdmin
-Outputs:
