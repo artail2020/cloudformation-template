@@ -35,7 +35,7 @@ Resources:
         - Key: Name
           PropagateAtLaunch: true
           Value: !Sub
-            - ${VPCStackName}-${Env}-autoscaling-server
+            - ${VPCStackName}-${Env}-app-autoscale
             - Env:
                 Fn::ImportValue: !Sub "${VPCStackName}-Env"
         - Key: Env
